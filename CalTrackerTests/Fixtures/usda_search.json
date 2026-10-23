@@ -1,0 +1,54 @@
+{
+  "totalHits": 3,
+  "currentPage": 1,
+  "totalPages": 1,
+  "foods": [
+    {
+      "fdcId": 173944,
+      "description": "Bananas, raw",
+      "dataType": "SR Legacy",
+      "foodNutrients": [
+        { "nutrientId": 1008, "nutrientName": "Energy", "nutrientNumber": "208", "unitName": "KCAL", "value": 89.0 },
+        { "nutrientId": 1003, "nutrientName": "Protein", "nutrientNumber": "203", "unitName": "G", "value": 1.09 },
+        { "nutrientId": 1005, "nutrientName": "Carbohydrate, by difference", "nutrientNumber": "205", "unitName": "G", "value": 22.84 },
+        { "nutrientId": 1004, "nutrientName": "Total lipid (fat)", "nutrientNumber": "204", "unitName": "G", "value": 0.33 },
+        { "nutrientId": 1079, "nutrientName": "Fiber, total dietary", "nutrientNumber": "291", "unitName": "G", "value": 2.6 },
+        { "nutrientId": 2000, "nutrientName": "Total Sugars", "nutrientNumber": "269", "unitName": "G", "value": 12.23 },
+        { "nutrientId": 1258, "nutrientName": "Fatty acids, total saturated", "nutrientNumber": "606", "unitName": "G", "value": 0.112 },
+        { "nutrientId": 1253, "nutrientName": "Cholesterol", "nutrientNumber": "601", "unitName": "MG", "value": 0.0 },
+        { "nutrientId": 1093, "nutrientName": "Sodium, Na", "nutrientNumber": "307", "unitName": "MG", "value": 1.0 },
+        { "nutrientId": 1092, "nutrientName": "Potassium, K", "nutrientNumber": "306", "unitName": "MG", "value": 358.0 },
+        { "nutrientId": 1087, "nutrientName": "Calcium, Ca", "nutrientNumber": "301", "unitName": "MG", "value": 5.0 },
+        { "nutrientId": 1089, "nutrientName": "Iron, Fe", "nutrientNumber": "303", "unitName": "MG", "value": 0.26 },
+        { "nutrientId": 1090, "nutrientName": "Magnesium, Mg", "nutrientNumber": "304", "unitName": "MG", "value": 27.0 },
+        { "nutrientId": 1095, "nutrientName": "Zinc, Zn", "nutrientNumber": "309", "unitName": "MG", "value": 0.15 },
+        { "nutrientId": 1162, "nutrientName": "Vitamin C, total ascorbic acid", "nutrientNumber": "401", "unitName": "MG", "value": 8.7 },
+        { "nutrientId": 1106, "nutrientName": "Vitamin A, RAE", "nutrientNumber": "320", "unitName": "UG", "value": 3.0 },
+        { "nutrientId": 1114, "nutrientName": "Vitamin D (D2 + D3)", "nutrientNumber": "328", "unitName": "UG", "value": 0.0 },
+        { "nutrientId": 1178, "nutrientName": "Vitamin B-12", "nutrientNumber": "418", "unitName": "UG", "value": 0.0 },
+        { "nutrientId": 1177, "nutrientName": "Folate, total", "nutrientNumber": "417", "unitName": "UG", "value": 20.0 }
+      ]
+    },
+    {
+      "fdcId": 2644283,
+      "description": "Lentils, dry",
+      "dataType": "Foundation",
+      "foodNutrients": [
+        { "nutrientNumber": "268", "unitName": "kJ", "value": 1470.0 },
+        { "nutrientNumber": "957", "unitName": "KCAL", "value": 352.0 },
+        { "nutrientNumber": "958", "unitName": "KCAL", "value": 344.0 },
+        { "nutrientNumber": "203", "unitName": "G", "value": 23.6 },
+        { "nutrientNumber": "324", "unitName": "IU", "value": 40.0 },
+        { "nutrientNumber": "435", "unitName": "UG", "value": 181.0 },
+        { "nutrientNumber": "307", "unitName": "G", "value": 0.006 },
+        { "nutrientNumber": "320", "unitName": "IU", "value": 33.0 },
+        { "nutrientNumber": "303", "unitName": "MG" }
+      ]
+    },
+    {
+      "fdcId": 999,
+      "description": "   ",
+      "foodNutrients": []
+    }
+  ]
+}

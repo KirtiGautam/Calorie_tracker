@@ -1,0 +1,49 @@
+{
+  "count": 4,
+  "page": 1,
+  "page_size": 20,
+  "hits": [
+    {
+      "code": "3017620422003",
+      "product_name": "Nutella",
+      "brands": ["Ferrero", "Nutella"],
+      "nutriments": {
+        "energy-kcal_100g": 539,
+        "energy_100g": 2252,
+        "energy_unit": "kcal",
+        "proteins_100g": "6.3",
+        "carbohydrates_100g": 57.5,
+        "fat_100g": 30.9,
+        "sugars_100g": 56.3,
+        "saturated-fat_100g": 10.6,
+        "sodium_100g": 0.0428,
+        "salt_100g": 0.107
+      }
+    },
+    {
+      "code": 5000159484695,
+      "product_name": "Oat Biscuits",
+      "brands": "",
+      "nutriments": {
+        "energy_100g": 2000,
+        "calcium_100g": 0.12,
+        "vitamin-d_100g": 0.0000025,
+        "vitamin-b12_100g": 0.0000004
+      }
+    },
+    {
+      "code": "111",
+      "product_name": "",
+      "nutriments": {
+        "energy-kcal_100g": 100
+      }
+    },
+    {
+      "code": "222",
+      "product_name": "Mystery Water",
+      "nutriments": {
+        "proteins_100g": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+// Shared build settings for every configuration.
+//
+// The USDA FoodData Central key defaults to the public, rate-limited DEMO_KEY.
+// To use your own free key, copy Secrets.xcconfig.example to Secrets.xcconfig
+// (which is gitignored) and set USDA_API_KEY there.
+
+USDA_API_KEY = DEMO_KEY
+
+#include? "Secrets.xcconfig"

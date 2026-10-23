@@ -1,0 +1,1014 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "aboutYouSection" : {
+      "comment" : "Section header above the body measurements used to calculate targets.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About You"
+          }
+        }
+      }
+    },
+    "activityExtraActive" : {
+      "comment" : "Activity level: very hard exercise or a physical job.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extra Active"
+          }
+        }
+      }
+    },
+    "activityField" : {
+      "comment" : "Label for the activity level picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activity"
+          }
+        }
+      }
+    },
+    "activityLight" : {
+      "comment" : "Activity level: light exercise 1–3 days a week.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lightly Active"
+          }
+        }
+      }
+    },
+    "activityModerate" : {
+      "comment" : "Activity level: moderate exercise 3–5 days a week.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moderately Active"
+          }
+        }
+      }
+    },
+    "activitySedentary" : {
+      "comment" : "Activity level: little or no exercise.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sedentary"
+          }
+        }
+      }
+    },
+    "activityVeryActive" : {
+      "comment" : "Activity level: hard exercise 6–7 days a week.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very Active"
+          }
+        }
+      }
+    },
+    "addFood" : {
+      "comment" : "Toolbar button on the Today screen that opens food search.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Food"
+          }
+        }
+      }
+    },
+    "ageField" : {
+      "comment" : "Label and placeholder for the age-in-years field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Age"
+          }
+        }
+      }
+    },
+    "amountSection" : {
+      "comment" : "Section header above the grams field on the Log Food sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amount"
+          }
+        }
+      }
+    },
+    "calculateAction" : {
+      "comment" : "Button that fills in suggested targets from the body measurements and goal.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calculate Targets"
+          }
+        }
+      }
+    },
+    "calculatorFooter" : {
+      "comment" : "Footer under the body measurements explaining where suggested targets come from.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimates from the Mifflin-St Jeor equation, not medical advice."
+          }
+        }
+      }
+    },
+    "cancelAction" : {
+      "comment" : "Button that closes the Log Food sheet without logging.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "deleteFailedTitle" : {
+      "comment" : "Alert title when a logged entry couldn't be deleted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Delete Entry"
+          }
+        }
+      }
+    },
+    "emptyLogMessage" : {
+      "comment" : "Shown in the log section when nothing has been logged today.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing logged yet. Tap Add Food to log what you eat."
+          }
+        }
+      }
+    },
+    "errorGeneric" : {
+      "comment" : "Fallback error message for unexpected failures.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. Try again."
+          }
+        }
+      }
+    },
+    "errorInvalidAmount" : {
+      "comment" : "Error when the person tries to log zero or a negative number of grams.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter an amount greater than 0 g."
+          }
+        }
+      }
+    },
+    "errorOffline" : {
+      "comment" : "Error when the device has no internet connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You’re offline. Check your connection and try again."
+          }
+        }
+      }
+    },
+    "errorRateLimited" : {
+      "comment" : "Error when a food database rejects requests for being too frequent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many searches in a short time. Wait a minute and try again."
+          }
+        }
+      }
+    },
+    "errorServer" : {
+      "comment" : "Error when a food database returns an error or can't be reached.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This food database isn’t responding right now. Try again later."
+          }
+        }
+      }
+    },
+    "errorTimeout" : {
+      "comment" : "Error when a request to a food database takes too long.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The search took too long. Try again."
+          }
+        }
+      }
+    },
+    "errorUnexpectedData" : {
+      "comment" : "Error when a food database sends a response the app can't read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This food database sent results CalTracker couldn’t read."
+          }
+        }
+      }
+    },
+    "goalBadgeAccessibilityLabel" : {
+      "comment" : "Spoken label for the goal badge on Today. %@ is the one-word goal, such as “Cut”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal: %@"
+          }
+        }
+      }
+    },
+    "goalBulk" : {
+      "comment" : "Explains the Bulk goal under the goal picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bulk: eat above maintenance to gain weight."
+          }
+        }
+      }
+    },
+    "goalCut" : {
+      "comment" : "Explains the Cut goal under the goal picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cut: eat below maintenance to lose weight."
+          }
+        }
+      }
+    },
+    "goalField" : {
+      "comment" : "Label and section header for choosing whether to cut, maintain or bulk.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal"
+          }
+        }
+      }
+    },
+    "goalMaintain" : {
+      "comment" : "Explains the Maintain goal under the goal picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maintain: eat at maintenance to keep your weight."
+          }
+        }
+      }
+    },
+    "goalShortBulk" : {
+      "comment" : "One-word goal: eating above maintenance to gain weight. Shown in the goal picker and the Today badge.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bulk"
+          }
+        }
+      }
+    },
+    "goalShortCut" : {
+      "comment" : "One-word goal: eating below maintenance to lose weight. Shown in the goal picker and the Today badge.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cut"
+          }
+        }
+      }
+    },
+    "goalShortMaintain" : {
+      "comment" : "One-word goal: eating at maintenance to keep weight steady. Shown in the goal picker and the Today badge.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maintain"
+          }
+        }
+      }
+    },
+    "gramsField" : {
+      "comment" : "Label and placeholder for the amount-in-grams text field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grams"
+          }
+        }
+      }
+    },
+    "heightField" : {
+      "comment" : "Label and placeholder for the height field, in centimetres.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Height (cm)"
+          }
+        }
+      }
+    },
+    "logAction" : {
+      "comment" : "Button that logs the chosen amount of food. Verb.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log"
+          }
+        }
+      }
+    },
+    "logFailedTitle" : {
+      "comment" : "Alert title when a food couldn't be logged.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Log Food"
+          }
+        }
+      }
+    },
+    "logFoodTitle" : {
+      "comment" : "Title of the sheet for choosing how much of a food to log.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log Food"
+          }
+        }
+      }
+    },
+    "logSection" : {
+      "comment" : "Section header above today's logged foods.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged Today"
+          }
+        }
+      }
+    },
+    "loggedConfirmation" : {
+      "comment" : "Banner on Today after logging a food. %1$@ is the amount with its unit, such as “150 g”. %2$@ is the food's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged %1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "micronutrientsTitle" : {
+      "comment" : "Disclosure label that expands today's micronutrient totals.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Micronutrients"
+          }
+        }
+      }
+    },
+    "nutrientCalcium" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calcium"
+          }
+        }
+      }
+    },
+    "nutrientCarbohydrates" : {
+      "comment" : "Nutrient name: total carbohydrates.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carbs"
+          }
+        }
+      }
+    },
+    "nutrientCholesterol" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cholesterol"
+          }
+        }
+      }
+    },
+    "nutrientEnergy" : {
+      "comment" : "Nutrient name: food energy, measured in kilocalories.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energy"
+          }
+        }
+      }
+    },
+    "nutrientFat" : {
+      "comment" : "Nutrient name: total fat.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fat"
+          }
+        }
+      }
+    },
+    "nutrientFiber" : {
+      "comment" : "Nutrient name: dietary fiber.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fiber"
+          }
+        }
+      }
+    },
+    "nutrientFolate" : {
+      "comment" : "Nutrient name: folate (vitamin B9).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folate"
+          }
+        }
+      }
+    },
+    "nutrientIron" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iron"
+          }
+        }
+      }
+    },
+    "nutrientMagnesium" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Magnesium"
+          }
+        }
+      }
+    },
+    "nutrientPotassium" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Potassium"
+          }
+        }
+      }
+    },
+    "nutrientProtein" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protein"
+          }
+        }
+      }
+    },
+    "nutrientSaturatedFat" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saturated Fat"
+          }
+        }
+      }
+    },
+    "nutrientSodium" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sodium"
+          }
+        }
+      }
+    },
+    "nutrientSugar" : {
+      "comment" : "Nutrient name: total sugars.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sugars"
+          }
+        }
+      }
+    },
+    "nutrientVitaminA" : {
+      "comment" : "Nutrient name: vitamin A as retinol activity equivalents (RAE).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitamin A (RAE)"
+          }
+        }
+      }
+    },
+    "nutrientVitaminB12" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitamin B12"
+          }
+        }
+      }
+    },
+    "nutrientVitaminC" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitamin C"
+          }
+        }
+      }
+    },
+    "nutrientVitaminD" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitamin D"
+          }
+        }
+      }
+    },
+    "nutrientZinc" : {
+      "comment" : "Nutrient name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zinc"
+          }
+        }
+      }
+    },
+    "nutritionSection" : {
+      "comment" : "Section header above the nutrient preview on the Log Food sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nutrition"
+          }
+        }
+      }
+    },
+    "partialLabel" : {
+      "comment" : "Shown under a total when some logged foods didn't report that nutrient, so the total undercounts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "partial"
+          }
+        }
+      }
+    },
+    "per100Grams" : {
+      "comment" : "Shown under a search result's energy value to say it's for 100 grams.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "per 100 g"
+          }
+        }
+      }
+    },
+    "saveAction" : {
+      "comment" : "Button that saves the daily targets. Verb.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        }
+      }
+    },
+    "saveFailedTitle" : {
+      "comment" : "Alert title when the daily targets couldn't be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Save Targets"
+          }
+        }
+      }
+    },
+    "searchFailedTitle" : {
+      "comment" : "Title shown when both food databases failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search Unavailable"
+          }
+        }
+      }
+    },
+    "searchIdleMessage" : {
+      "comment" : "Hint shown before a search starts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type at least 3 letters to search whole foods and packaged products."
+          }
+        }
+      }
+    },
+    "searchIdleTitle" : {
+      "comment" : "Title shown before a search starts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search for a Food"
+          }
+        }
+      }
+    },
+    "searchPrompt" : {
+      "comment" : "Placeholder text in the food search field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banana, oats, Nutella…"
+          }
+        }
+      }
+    },
+    "searchTitle" : {
+      "comment" : "Navigation title of the food search screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Food"
+          }
+        }
+      }
+    },
+    "setTargetsPrompt" : {
+      "comment" : "Button on Today, shown when no targets are set, that opens the targets editor.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Daily Targets"
+          }
+        }
+      }
+    },
+    "sexFemale" : {
+      "comment" : "Sex option for the energy formula.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Female"
+          }
+        }
+      }
+    },
+    "sexField" : {
+      "comment" : "Label for the sex picker used by the energy formula.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sex"
+          }
+        }
+      }
+    },
+    "sexMale" : {
+      "comment" : "Sex option for the energy formula.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Male"
+          }
+        }
+      }
+    },
+    "sexUnspecified" : {
+      "comment" : "Sex option for the energy formula; uses the average of the female and male formulas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Specified"
+          }
+        }
+      }
+    },
+    "sourceOpenFoodFacts" : {
+      "comment" : "Badge naming the Open Food Facts database. Proper name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Food Facts"
+          }
+        }
+      }
+    },
+    "sourceUSDA" : {
+      "comment" : "Badge naming the USDA FoodData Central database. Proper name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USDA"
+          }
+        }
+      }
+    },
+    "targetDeficit" : {
+      "comment" : "Caption under a total that's below its target. %1$@ is the target amount with its unit, %2$@ the amount still to eat.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of %1$@ · %2$@ to go"
+          }
+        }
+      }
+    },
+    "targetOnTarget" : {
+      "comment" : "Caption under a total that's within 10% of its target. %@ is the target amount with its unit.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of %@ · on target"
+          }
+        }
+      }
+    },
+    "targetSurplus" : {
+      "comment" : "Caption under a total that's above its target. %1$@ is the target amount with its unit, %2$@ the amount over.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of %1$@ · %2$@ over"
+          }
+        }
+      }
+    },
+    "targetsAction" : {
+      "comment" : "Toolbar button on the Today screen that opens the daily targets editor.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Targets"
+          }
+        }
+      }
+    },
+    "targetsFooter" : {
+      "comment" : "Footer under the daily target fields.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave a target blank to stop tracking it."
+          }
+        }
+      }
+    },
+    "targetsSection" : {
+      "comment" : "Section header above the editable daily target fields.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily Targets"
+          }
+        }
+      }
+    },
+    "targetsTitle" : {
+      "comment" : "Title of the sheet for editing the goal and daily targets.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily Targets"
+          }
+        }
+      }
+    },
+    "todayTitle" : {
+      "comment" : "Navigation title of the root screen showing today's log.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        }
+      }
+    },
+    "unknownValue" : {
+      "comment" : "Spoken accessibility label for a nutrient amount the database didn't report (shown visually as a dash).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        }
+      }
+    },
+    "weightField" : {
+      "comment" : "Label and placeholder for the body weight field, in kilograms.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weight (kg)"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

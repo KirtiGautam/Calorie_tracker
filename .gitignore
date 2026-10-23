@@ -1,1 +1,12 @@
-.env
+# Local secrets (copy Config/Secrets.xcconfig.example to Config/Secrets.xcconfig)
+Config/Secrets.xcconfig
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+build/
+
+# macOS
+.DS_Store
+PLAN.md
