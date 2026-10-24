@@ -55,5 +55,23 @@ extension SchemaV1 {
                 entry.loggedAt >= start && entry.loggedAt < end
             }
         }
+
+        /// Matches entries logged before the calendar day of `date` begins.
+        static func loggedBeforeDay(of date: Date, calendar: Calendar) -> Predicate<FoodLogEntry> {
+            let start = calendar.startOfDay(for: date)
+            return #Predicate<FoodLogEntry> { entry in
+                entry.loggedAt < start
+            }
+        }
+
+        /// Matches entries logged after the calendar day of `date` ends and before the calendar day of `today` begins.
+        static func loggedBetweenDay(after date: Date, andDay today: Date, calendar: Calendar) -> Predicate<FoodLogEntry> {
+            let dayStart = calendar.startOfDay(for: date)
+            let start = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86_400)
+            let end = calendar.startOfDay(for: today)
+            return #Predicate<FoodLogEntry> { entry in
+                entry.loggedAt >= start && entry.loggedAt < end
+            }
+        }
     }
 }

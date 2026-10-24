@@ -181,6 +181,18 @@
         }
       }
     },
+    "emptyPastDayMessage" : {
+      "comment" : "Shown in the log section of a past day that has no logged food.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing was logged on this day."
+          }
+        }
+      }
+    },
     "errorGeneric" : {
       "comment" : "Fallback error message for unexpected failures.",
       "extractionState" : "manual",
@@ -457,6 +469,78 @@
         }
       }
     },
+    "motivationAllTargetsMet" : {
+      "comment" : "Encouragement above today's totals when every daily target has been reached.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every target hit. Great day!"
+          }
+        }
+      }
+    },
+    "motivationCarbohydratesOver" : {
+      "comment" : "Encouragement above today's totals when the carbohydrate total is well over its daily target.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carbs are over target. Go easy for the rest of the day."
+          }
+        }
+      }
+    },
+    "motivationEnergyRemaining" : {
+      "comment" : "Encouragement above today's totals while energy is still short of its target. %1$@ is the energy left to reach the target, with its unit, such as “620 kcal”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ to go. Keep it up!"
+          }
+        }
+      }
+    },
+    "motivationFreshStart" : {
+      "comment" : "Encouragement above today's totals when targets are set but nothing has been logged yet today.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fresh start. Log your first meal."
+          }
+        }
+      }
+    },
+    "motivationTargetsProgress" : {
+      "comment" : "Encouragement above today's totals while some targets are still short. %1$lld is how many targets have been reached. %2$lld is how many targets are set, from 1 to 4.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld targets hit. Keep going!"
+          }
+        }
+      }
+    },
+    "nextDayAction" : {
+      "comment" : "Arrow button above the totals on the main screen that shows the next day with logged food, or today. Shown as an icon and read by VoiceOver.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Day"
+          }
+        }
+      }
+    },
     "nutrientCalcium" : {
       "comment" : "Nutrient name.",
       "extractionState" : "manual",
@@ -709,6 +793,30 @@
         }
       }
     },
+    "pastDayLogSection" : {
+      "comment" : "Header above the list of foods logged on a past day, shown instead of “Logged Today”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logged That Day"
+          }
+        }
+      }
+    },
+    "pastDayTitle" : {
+      "comment" : "Navigation title of the main screen while it shows a past day's log instead of today's.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        }
+      }
+    },
     "per100Grams" : {
       "comment" : "Shown under a search result's energy value to say it's for 100 grams.",
       "extractionState" : "manual",
@@ -717,6 +825,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "per 100 g"
+          }
+        }
+      }
+    },
+    "previousDayAction" : {
+      "comment" : "Arrow button above the totals on the main screen that shows the previous day with logged food. Shown as an icon and read by VoiceOver.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous Day"
           }
         }
       }
