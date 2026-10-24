@@ -8,6 +8,9 @@ struct CalTrackerApp: App {
 
     init() {
         let container = AppModelContainer.make()
+        #if DEBUG
+        SampleLogSeeder.seedIfRequested(into: container.mainContext)
+        #endif
         modelContainer = container
         dependencies = .live(modelContext: container.mainContext)
     }

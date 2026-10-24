@@ -6,7 +6,8 @@ A calorie and macro tracker for iPhone and iPad. Search for a food, log how many
 
 - **Food search** across [USDA FoodData Central](https://fdc.nal.usda.gov) (whole foods) and [Open Food Facts](https://world.openfoodfacts.org) (packaged products). Both sources are queried in parallel, and if one fails the other's results still show.
 - **Log by weight.** Enter grams or tap a preset, and the nutrients are scaled for you.
-- **Today at a glance.** Energy, protein, carbs and fat with progress bars against your targets, plus a micronutrient breakdown.
+- **Today at a glance.** Energy, protein, carbs and fat with progress bars against your targets, plus a micronutrient breakdown and a line of encouragement based on how your day is going.
+- **Look back.** Swipe or tap the arrows to step through earlier days you logged food on.
 - **Daily targets.** Enter them yourself, or have them suggested from your body profile, activity level and goal (cut, maintain or bulk) using the Mifflin-St Jeor equation.
 - **Local and private.** Your log is stored on device with SwiftData. There is no account and no backend.
 
