@@ -266,13 +266,13 @@
       }
     },
     "goalBadgeAccessibilityLabel" : {
-      "comment" : "Spoken label for the goal badge on Today. %@ is the one-word goal, such as “Cut”.",
+      "comment" : "Spoken label for the goal badge on Today. %1$@ is the one-word goal, such as “Cut”.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Goal: %@"
+            "value" : "Goal: %1$@"
           }
         }
       }
@@ -902,13 +902,13 @@
       }
     },
     "targetOnTarget" : {
-      "comment" : "Caption under a total that's within 10% of its target. %@ is the target amount with its unit.",
+      "comment" : "Caption under a total that's within 10% of its target. %1$@ is the target amount with its unit.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "of %@ · on target"
+            "value" : "of %1$@ · on target"
           }
         }
       }

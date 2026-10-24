@@ -12,7 +12,7 @@ nonisolated struct USDAClient: FoodSearchProvider {
     private let configuration: USDAConfiguration
 
     /// Creates a client that sends requests through `httpClient` using `configuration`'s key.
-    init(httpClient: any HTTPClient = URLSession.shared, configuration: USDAConfiguration) {
+    init(httpClient: any HTTPClient, configuration: USDAConfiguration) {
         self.httpClient = httpClient
         self.configuration = configuration
     }

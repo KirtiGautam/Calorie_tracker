@@ -18,7 +18,10 @@ struct TodayView: View {
     /// The food just logged, shown as a banner until it times out.
     @State private var confirmation: LoggedFood?
 
-    /// The moment that defines "today". It's refreshed whenever the app becomes active so the log rolls over at midnight.
+    /// The moment that defines "today".
+    ///
+    /// It's refreshed on a significant time change (midnight, or a time zone or clock change) and whenever the app
+    /// becomes active, so the log rolls over even while the app stays open.
     @State private var referenceDate = Date.now
 
     var body: some View {
@@ -64,6 +67,9 @@ struct TodayView: View {
         .onChange(of: scenePhase) { _, newPhase in
             refreshReferenceDate(for: newPhase)
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+            refreshReferenceDate()
+        }
     }
 
     private func showSearch() {
@@ -102,8 +108,12 @@ struct TodayView: View {
 
     private func refreshReferenceDate(for phase: ScenePhase) {
         if phase == .active {
-            referenceDate = .now
+            refreshReferenceDate()
         }
+    }
+
+    private func refreshReferenceDate() {
+        referenceDate = .now
     }
 }
 

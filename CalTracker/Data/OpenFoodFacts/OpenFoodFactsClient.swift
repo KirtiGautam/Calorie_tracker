@@ -3,12 +3,10 @@ import Foundation
 /// Searches Open Food Facts for packaged and branded products.
 nonisolated struct OpenFoodFactsClient: FoodSearchProvider {
     /// The contact OFF asks every app to include in its User-Agent.
-    ///
-    /// Replace this with a real email or project URL before shipping.
-    static let contact = "contact@example.com"
+    static let contact = "https://github.com/KirtiGautam/Calorie_tracker"
 
     /// The User-Agent OFF requires, in the form `AppName/Version (contact)`.
-    static let userAgent = "CalTracker/0.1 (\(contact))"
+    static let userAgent = "Gramwise/0.1 (\(contact))"
 
     /// How many products to request per search.
     static let pageSize = 20
@@ -16,7 +14,7 @@ nonisolated struct OpenFoodFactsClient: FoodSearchProvider {
     private let httpClient: any HTTPClient
 
     /// Creates a client that sends requests through `httpClient`.
-    init(httpClient: any HTTPClient = URLSession.shared) {
+    init(httpClient: any HTTPClient) {
         self.httpClient = httpClient
     }
 

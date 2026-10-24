@@ -1,0 +1,45 @@
+{
+  "count": 4,
+  "page": 1,
+  "page_size": 20,
+  "hits": [
+    {
+      "code": "900000000001",
+      "product_name": "NaN Bar",
+      "brands": ["Glitch Foods"],
+      "nutriments": {
+        "energy-kcal_100g": "nan",
+        "proteins_100g": 8
+      }
+    },
+    {
+      "code": "900000000002",
+      "product_name": "Typo Cake",
+      "nutriments": {
+        "energy-kcal_100g": 30000,
+        "energy_100g": 1500,
+        "fat_100g": 20
+      }
+    },
+    {
+      "code": "900000000003",
+      "product_name": "Odd Yogurt",
+      "nutriments": {
+        "energy-kcal_100g": 60,
+        "proteins_100g": -3,
+        "sodium_100g": "nan",
+        "sugars_100g": 250,
+        "calcium_100g": "inf",
+        "fat_100g": 1.5
+      }
+    },
+    {
+      "code": "900000000004",
+      "product_name": "Olive Oil",
+      "nutriments": {
+        "energy-kcal_100g": 900,
+        "fat_100g": 100
+      }
+    }
+  ]
+}

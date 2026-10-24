@@ -66,8 +66,40 @@ struct OFFMapperTests {
         expectApproximately(biscuits.per100g.vitaminB12, 0.4)
     }
 
-    private func parseFixture() throws -> [FoodItem] {
-        let data = try FixtureLoader.data(named: "off_search")
+    @Test func implausibleFixtureDropsProductsWithoutAPlausibleEnergyValue() throws {
+        let foods = try parseFixture(named: "off_search_implausible")
+
+        #expect(foods.map(\.name) == ["Typo Cake", "Odd Yogurt", "Olive Oil"], "\"nan\" kcal with no kJ fallback drops the product")
+    }
+
+    @Test func implausibleKilocaloriesFallBackToKilojoules() throws {
+        let cake = try #require(try parseFixture(named: "off_search_implausible").first { $0.name == "Typo Cake" })
+
+        expectApproximately(cake.per100g.energy, 1_500 / 4.184)
+        expectApproximately(cake.per100g.fat, 20)
+    }
+
+    @Test func implausibleNutrientsBecomeUnknownWithoutDroppingTheProduct() throws {
+        let yogurt = try #require(try parseFixture(named: "off_search_implausible").first { $0.name == "Odd Yogurt" })
+
+        #expect(yogurt.per100g.energy == 60)
+        expectApproximately(yogurt.per100g.fat, 1.5)
+        #expect(yogurt.per100g.protein == nil, "A negative amount is unknown")
+        #expect(yogurt.per100g.sodium == nil, "A \"nan\" string is unknown")
+        #expect(yogurt.per100g.calcium == nil, "An \"inf\" string is unknown")
+        #expect(yogurt.per100g.sugar == nil, "More than 100 g per 100 g is unknown")
+    }
+
+    @Test func implausibleFixtureKeepsAmountsAtTheirLimits() throws {
+        let oil = try #require(try parseFixture(named: "off_search_implausible").last)
+
+        #expect(oil.name == "Olive Oil")
+        #expect(oil.per100g.energy == 900)
+        #expect(oil.per100g.fat == 100)
+    }
+
+    private func parseFixture(named name: String = "off_search") throws -> [FoodItem] {
+        let data = try FixtureLoader.data(named: name)
         let response = try JSONDecoder().decode(OFFSearchResponse.self, from: data)
         return OFFMapper.foodItems(from: response)
     }

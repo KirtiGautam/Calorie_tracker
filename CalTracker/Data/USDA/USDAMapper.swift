@@ -27,6 +27,8 @@ nonisolated enum USDAMapper {
     }
 
     /// Builds a per-100 g profile, taking the first usable nutrient number for each nutrient.
+    ///
+    /// A number whose amount is negative or impossibly large is skipped in favor of the next one.
     static func profile(from foodNutrients: [USDASearchResponse.FoodNutrient]) -> NutrientProfile {
         var byNumber: [String: USDASearchResponse.FoodNutrient] = [:]
         for foodNutrient in foodNutrients {
@@ -40,6 +42,7 @@ nonisolated enum USDAMapper {
             profile[nutrient] = nutrientNumbers(for: nutrient).lazy
                 .compactMap { byNumber[$0] }
                 .compactMap { convert($0, to: nutrient) }
+                .compactMap(nutrient.plausibleAmountPer100g)
                 .first
         }
         return profile
@@ -75,7 +78,8 @@ nonisolated enum USDAMapper {
 
     /// Converts a USDA amount into `nutrient`'s display unit, or returns `nil` when the unit can't be converted.
     static func convert(_ foodNutrient: USDASearchResponse.FoodNutrient, to nutrient: Nutrient) -> Double? {
-        guard let value = foodNutrient.value, let unitName = foodNutrient.unitName?.uppercased() else {
+        // The micro sign and Greek mu become "u" first, because uppercasing turns either into a capital mu.
+        guard let value = foodNutrient.value, let unitName = foodNutrient.unitName?.replacing(/[µμ]/, with: "u").uppercased() else {
             return nil
         }
 
@@ -95,7 +99,7 @@ nonisolated enum USDAMapper {
         let sourceUnitsPerGram: Double? = switch unitName {
         case "G": NutrientUnit.grams.perGram
         case "MG": NutrientUnit.milligrams.perGram
-        case "UG", "µG", "MCG": NutrientUnit.micrograms.perGram
+        case "UG", "MCG": NutrientUnit.micrograms.perGram
         default: nil
         }
         // One combined factor keeps same-unit values exact (12.5 µg stays 12.5, not 12.499999999999998).

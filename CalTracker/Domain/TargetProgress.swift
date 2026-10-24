@@ -3,8 +3,13 @@ nonisolated struct TargetProgress: Hashable, Sendable {
     /// How far from the target, as a fraction of it, still counts as on target.
     static let tolerance = 0.1
 
+    /// The nutrient being compared.
     let nutrient: Nutrient
+
+    /// Today's total, in the nutrient's unit.
     let total: Double
+
+    /// The daily target, in the nutrient's unit. `DailyTargets.progress(for:in:)` only creates progress for targets above 0.
     let target: Double
 
     /// The total as a fraction of the target. It can exceed 1.

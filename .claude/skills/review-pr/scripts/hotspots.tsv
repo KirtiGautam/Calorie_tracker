@@ -1,0 +1,92 @@
+# Hotspot patterns for hotspots.sh. Each hit is a lead to inspect, not a finding.
+# Columns, separated by tabs: path regex, added-line regex (POSIX ERE), label.
+# Swift lines whose first non-blank characters are // are skipped.
+#
+# Concurrency
+\.swift$	DispatchQueue|DispatchGroup|DispatchSemaphore	GCD: use async/await, actors, or Mutex
+\.swift$	Task\.detached	Task.detached: usually @concurrent or structured concurrency instead
+\.swift$	@unchecked Sendable	@unchecked Sendable: verify real locking or restructure
+\.swift$	nonisolated\(unsafe\)	nonisolated(unsafe): only for provably immutable state
+\.swift$	with(Checked|Unsafe)(Throwing)?Continuation	continuation: must resume exactly once on every path
+\.swift$	AsyncStream(<[^>]*>)?[ ]*[({]	AsyncStream closure init: prefer makeStream(of:); check finish()
+\.swift$	MainActor\.run	MainActor.run: likely redundant with default MainActor isolation
+\.swift$	Task\.sleep\(nanoseconds	use Task.sleep(for:)
+\.swift$	(^|[^A-Za-z.])Task[ ]*\{	unstructured Task: errors handled? in a loop? cancelled when replaced?
+# Safety and errors
+\.swift$	try!|as!	force try or cast
+\.swift$	[A-Za-z0-9_)]![.,) ]|[A-Za-z0-9_)]!$	possible force unwrap
+\.swift$	(^|[^.A-Za-z])print\(	print(): show errors via userMessage(for:) or use Logger
+\.swift$	catch[ ]*\{[ ]*\}	empty catch: error swallowed
+\.swift$	try\?	try?: make sure a user-facing failure is not swallowed
+\.swift$	fatalError\(	fatalError: only for truly unrecoverable states
+# SwiftUI API
+\.swift$	(foregroundColor|accentColor|cornerRadius|tabItem|navigationBarHidden|navigationBarTitle|statusBarHidden|autocapitalization|disableAutocorrection)\(	deprecated SwiftUI modifier
+\.swift$	(^|[^A-Za-z])(NavigationView|PreviewProvider|AnimatableModifier|UIScreen\.main|UIImpactFeedbackGenerator|UIColor)	legacy API
+\.swift$	\.navigationBar(Leading|Trailing)	deprecated placement: use a semantic toolbar placement
+\.swift$	showsIndicators:	use .scrollIndicators(.hidden)
+\.swift$	\.animation\([^,]*\)[ ]*$	animation without value:
+\.swift$	onChange\(of:[^)]*\)[ ]*\{[ ]*[A-Za-z_]+[ ]+in	one-parameter onChange: use the 0- or 2-parameter form
+\.swift$	onTapGesture	onTapGesture: use a Button unless location or count is needed
+\.swift$	ObservableObject|@Published|@StateObject|@ObservedObject|@EnvironmentObject	legacy observation: use @Observable
+\.swift$	^[ ]*@State[ ]+(var|let)	@State is not private
+\.swift$	GeometryReader	GeometryReader: prefer containerRelativeFrame, visualEffect, or Layout
+\.swift$	AnyView	AnyView: avoid type erasure
+\.swift$	Binding\(get:	Binding(get:set:): bind to a property instead
+\.swift$	\.indices|\\\.offset|id: \\\.self	ForEach identity: needs stable element ids
+\.swift$	userInterfaceIdiom|!= \.compact	layout from idiom or != .compact: use size classes and == .regular
+\.swift$	ignoresSafeArea\(\)	unqualified ignoresSafeArea: fine for backgrounds only
+\.swift$	\.font\(\.system\(size:|\.caption2	fixed or tiny font: Dynamic Type
+\.swift$	fontWeight\(\.bold\)	use bold()
+\.swift$	\.onAppear	onAppear: async work belongs in .task
+^CalTracker/.*\.swift$	(Text|Button|Label|Toggle|Section|Menu|Picker|TextField|LabeledContent|navigationTitle|alert|confirmationDialog|accessibilityLabel|accessibilityHint|accessibilityValue|ContentUnavailableView)\("	UI string literal: use a generated catalog symbol (fine in #Preview)
+# Swift and formatting
+\.swift$	String\(format:|NumberFormatter|DateFormatter|MeasurementFormatter|DateComponentsFormatter|RelativeDateTimeFormatter|ByteCountFormatter|specifier:	legacy formatting: use FormatStyle
+\.swift$	NSLocalizedString	use LocalizedStringResource
+\.swift$	localizedCaseInsensitiveContains|lowercased\(\)\.contains	user-text matching: use localizedStandardContains
+\.swift$	\.filter[ ]*\{[^}]*\}\.count|\.filter\([^)]*\)\.count	use count(where:)
+\.swift$	(^|[^.A-Za-z])Date\(\)	use Date.now
+\.swift$	replacingOccurrences	use replacing(_:with:)
+\.swift$	CGFloat	prefer Double unless an API needs CGFloat
+\.swift$	import Combine	Combine: prefer Observation or async sequences
+# Architecture
+^CalTracker/(Features|Domain)/.*\.swift$	URLSession	URLSession outside Data/App: go through a client and HTTPClient
+^CalTracker/.*\.swift$	URLSession\.shared\.[a-z]|URLSession\(	direct URLSession use: clients call their injected HTTPClient
+^CalTracker/.*\.swift$	UserDefaults\.standard|@AppStorage	hidden UserDefaults dependency: go through TargetsStore
+^CalTracker/.*\.swift$	static (let|var) shared	singleton: dependencies go through AppDependencies
+^CalTracker/.*\.swift$	\.queryItems[ ]*=	plain queryItems: use setStrictlyEncodedQueryItems
+^CalTracker/.*\.swift$	URL\(string:[ ]*"[^"]*\\\(	URL built by string interpolation
+^CalTracker/Domain/.*\.swift$	import (SwiftUI|SwiftData|UIKit|Combine)|URLSession|ModelContext	Domain must not depend on UI, persistence, or networking
+# SwiftData
+\.swift$	@Model	model change: needs a new VersionedSchema and MigrationStage?
+\.swift$	VersionedSchema|MigrationStage|versionIdentifier|schemas:	schema or migration plan change: verify the upgrade path
+\.swift$	#Predicate	predicate: check runtime-safe operations only
+^CalTracker/.*\.swift$	(#Predicate|filter:).*isEmpty == false	in a #Predicate this crashes at runtime: use !isEmpty
+\.swift$	@Relationship	relationship: explicit deleteRule and inverse?
+\.swift$	@Attribute\(\.unique\)|#Unique	uniqueness turns inserts into upserts: intended?
+\.swift$	@Query	@Query: only valid inside SwiftUI views
+\.swift$	delete\(model:	bulk delete: check the predicate is tight
+\.swift$	ModelContext\(	new ModelContext: check actor isolation and save path
+# Security
+\.swift$	http://	plain http URL: ATS
+\.swift$|\.plist$|\.xcconfig$|\.json$	(api_?key|apiKey|USDA_API_KEY)[ "]*[:=][ ]*"?[A-Za-z0-9]{20,}	possible real API key
+\.plist$	NSAppTransportSecurity|NSAllowsArbitraryLoads	ATS exception
+\.swift$	Logger\(|os_log	logging: check privacy annotations, no URLs with api_key
+# Unit tests
+^CalTrackerTests/.*\.swift$	import XCTest|XCTAssert|XCTestCase|XCTUnwrap	XCTest in unit tests: use Swift Testing
+^CalTrackerTests/.*\.swift$	#(expect|require)\(!	negation inside #expect: write == false
+^CalTrackerTests/.*\.swift$	Task\.sleep|Thread\.sleep|(^|[^.A-Za-z])sleep\(	timing-based wait in a test
+^CalTrackerTests/.*\.swift$	\.serialized	.serialized only affects parameterized tests
+^CalTrackerTests/.*\.swift$	throws: (any )?Error\.self	expect a specific error, not Error.self
+^CalTrackerTests/.*\.swift$	URLSession|UserDefaults\.standard	live network or shared defaults: use MockHTTPClient and IsolatedDefaults
+^CalTrackerTests/.*\.swift$	ModelContainer\(	use AppModelContainer.make(inMemory: true)
+^CalTrackerTests/.*\.swift$	timeLimit\(\.seconds	timeLimit only accepts .minutes
+^CalTrackerTests/.*\.swift$	@Suite[ ]*$	bare @Suite is unnecessary
+^CalTrackerUITests/.*\.swift$	(^|[^.A-Za-z])sleep\(|Thread\.sleep	use waitForExistence instead of sleeping
+# Project file
+project\.pbxproj$	IPHONEOS_DEPLOYMENT_TARGET	deployment target changed
+project\.pbxproj$	XCRemoteSwiftPackageReference|XCLocalSwiftPackageReference|XCSwiftPackageProductDependency	new package dependency
+project\.pbxproj$	PBXFileReference|PBXBuildFile	hand-added file reference: targets use synchronized groups
+project\.pbxproj$	PRODUCT_BUNDLE_IDENTIFIER|PRODUCT_NAME|SWIFT_DEFAULT_ACTOR_ISOLATION|SWIFT_STRICT_CONCURRENCY|SWIFT_VERSION|CFBundleDisplayName	core build setting changed
+# String catalog
+\.xcstrings$	"extractionState" : "(extracted|stale|migrated)"	catalog key not manual
+\.xcstrings$	%@|%lld|%d|%f	non-positional placeholder: use %1$@ and describe it in the comment
