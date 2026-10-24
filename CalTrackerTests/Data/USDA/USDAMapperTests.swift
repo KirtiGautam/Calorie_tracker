@@ -45,6 +45,9 @@ struct USDAMapperTests {
         (.protein, "MG", 2_500, 2.5),
         (.energy, "kJ", 418.4, 100),
         (.vitaminD, "IU", 40, 1),
+        (.vitaminD, "µg", 2.5, 2.5),
+        (.vitaminB12, "μg", 1, 1),
+        (.folate, "mcg", 20, 20),
     ])
     func convertsUnits(nutrient: Nutrient, unitName: String, value: Double, expected: Double) {
         let foodNutrient = USDASearchResponse.FoodNutrient(nutrientNumber: nil, unitName: unitName, value: value)
@@ -61,6 +64,17 @@ struct USDAMapperTests {
         let foodNutrient = USDASearchResponse.FoodNutrient(nutrientNumber: nil, unitName: unitName, value: 33)
 
         #expect(USDAMapper.convert(foodNutrient, to: nutrient) == nil)
+    }
+
+    @Test func skipsImplausibleAmountsAndFallsBackToTheNextNumber() {
+        let profile = USDAMapper.profile(from: [
+            USDASearchResponse.FoodNutrient(nutrientNumber: "208", unitName: "KCAL", value: -5),
+            USDASearchResponse.FoodNutrient(nutrientNumber: "957", unitName: "KCAL", value: 352),
+            USDASearchResponse.FoodNutrient(nutrientNumber: "307", unitName: "MG", value: 200_000),
+        ])
+
+        #expect(profile.energy == 352, "A negative 208 falls back to Atwater general (957)")
+        #expect(profile.sodium == nil, "200 g of sodium per 100 g is impossible")
     }
 
     @Test func fixtureDropsFoodsWithoutAName() throws {

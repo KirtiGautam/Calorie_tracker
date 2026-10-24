@@ -13,11 +13,22 @@ final class TargetsViewModel {
     /// The weights the calculator accepts, in kilograms.
     static let weightRange = 30.0...300
 
+    /// The goal being edited.
     var goal: WeightGoal
+
+    /// The sex being edited.
     var sex: BiologicalSex
+
+    /// The age being edited, or `nil` while the field is empty.
     var age: Int?
+
+    /// The height being edited, in centimetres, or `nil` while the field is empty.
     var heightCentimetres: Double?
+
+    /// The weight being edited, in kilograms, or `nil` while the field is empty.
     var weightKilograms: Double?
+
+    /// The activity level being edited.
     var activity: ActivityLevel
 
     /// The targets being edited.

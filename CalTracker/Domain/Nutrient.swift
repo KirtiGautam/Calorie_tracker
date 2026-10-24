@@ -66,6 +66,18 @@ nonisolated enum Nutrient: String, CaseIterable, Identifiable, Codable, Sendable
         }
     }
 
+    /// The per-100 g amounts that can be real, in `unit`.
+    ///
+    /// No food has more than 100 g of one nutrient per 100 g, and pure fat is about 900 kcal per 100 g.
+    var plausibleAmountsPer100g: ClosedRange<Double> {
+        unit == .kilocalories ? 0...900 : 0...(100 * unit.perGram)
+    }
+
+    /// Returns `amount` when it's a real per-100 g amount of this nutrient, or `nil` when it's negative, non-finite or too large.
+    func plausibleAmountPer100g(_ amount: Double) -> Double? {
+        plausibleAmountsPer100g.contains(amount) ? amount : nil
+    }
+
     /// Whether the nutrient is a macro or a micronutrient.
     var group: NutrientGroup {
         switch self {

@@ -2,9 +2,16 @@
 ///
 /// `nil` means there's no target for that nutrient.
 nonisolated struct DailyTargets: Codable, Hashable, Sendable {
+    /// The daily energy target, in kcal.
     var energy: Double?
+
+    /// The daily protein target, in grams.
     var protein: Double?
+
+    /// The daily carbohydrate target, in grams.
     var carbohydrates: Double?
+
+    /// The daily fat target, in grams.
     var fat: Double?
 
     /// Whether no nutrient has a target.

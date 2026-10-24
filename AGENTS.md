@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository. Read [README.md](READM
 
 ## Project at a glance
 
-- **App:** Gramwise, a calorie and macro tracker. The Xcode project, targets and module are still named `CalTracker`, and the bundle ID is `com.kirti.CalTracker`. Don't rename them unless asked.
+- **App:** Gramwise, a calorie and macro tracker. The Xcode project, targets and module are still named `CalTracker`, and the bundle ID is `com.kirti.Gramwise`. Don't rename them unless asked.
 - **Platforms:** iOS and iPadOS 27.0, iPhone and iPad (including iPhone Duo and resizable windows). Don't change the deployment target.
 - **Toolchain:** Xcode 27.1, Swift 6, `SWIFT_STRICT_CONCURRENCY = complete`, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, approachable concurrency on.
 - **Dependencies:** none. Don't add any third-party package without asking.

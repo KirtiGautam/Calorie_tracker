@@ -5,12 +5,12 @@ nonisolated enum OFFMapper {
     /// Kilojoules per kilocalorie, used when a product only reports energy in kJ.
     static let kilojoulesPerKilocalorie = 4.184
 
-    /// Returns the usable foods in `response`, dropping products without a name or energy value.
+    /// Returns the usable foods in `response`, dropping products without a name or a plausible energy value.
     static func foodItems(from response: OFFSearchResponse) -> [FoodItem] {
         response.products.compactMap(foodItem(from:))
     }
 
-    /// Returns a food for `product`, or `nil` when it lacks a code, a name or an energy value.
+    /// Returns a food for `product`, or `nil` when it lacks a code, a name or a plausible energy value.
     static func foodItem(from product: OFFSearchResponse.Product) -> FoodItem? {
         guard
             let code = product.code?.trimmingCharacters(in: .whitespaces), code.isEmpty == false,
@@ -32,17 +32,19 @@ nonisolated enum OFFMapper {
     }
 
     /// Builds a per-100 g profile, converting OFF's gram values into each nutrient's display unit.
+    ///
+    /// OFF is user-contributed, so negative, non-finite and impossibly large values are treated as unknown.
     static func profile(from nutriments: OFFSearchResponse.Nutriments) -> NutrientProfile {
         var profile = NutrientProfile()
         for nutrient in Nutrient.allCases {
             if let grams = nutriments.values[fieldName(for: nutrient)] {
-                profile[nutrient] = grams * nutrient.unit.perGram
+                profile[nutrient] = nutrient.plausibleAmountPer100g(grams * nutrient.unit.perGram)
             }
         }
 
-        // `energy_100g` is always in kJ, so it's only a fallback when kcal is missing.
+        // `energy_100g` is always in kJ, so it's only a fallback when kcal is missing or implausible.
         if profile.energy == nil, let kilojoules = nutriments.values["energy_100g"] {
-            profile.energy = kilojoules / kilojoulesPerKilocalorie
+            profile.energy = Nutrient.energy.plausibleAmountPer100g(kilojoules / kilojoulesPerKilocalorie)
         }
         return profile
     }
