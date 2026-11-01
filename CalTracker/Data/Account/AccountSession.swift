@@ -85,9 +85,12 @@ final class AccountSession {
 
     /// Runs `operation` with the current access token, refreshing the tokens once if the server rejects it.
     ///
+    /// Restores the saved tokens first when `restore()` hasn't read them yet.
+    ///
     /// - Throws: `GramwiseAPIError.sessionExpired`, after signing out, when there are no tokens or they can't be
     ///   renewed. Otherwise the operation's or the refresh's own error.
     func withAccessToken<Value>(_ operation: (String) async throws -> Value) async throws -> Value {
+        await restore()
         guard let current = tokens else { throw GramwiseAPIError.sessionExpired }
         do {
             return try await operation(current.accessToken)

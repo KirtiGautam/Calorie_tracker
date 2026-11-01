@@ -32,6 +32,15 @@ struct AccountSessionTests {
         #expect(account.isSignedIn)
     }
 
+    @Test func usingTheTokensRestoresThemFirst() async throws {
+        let account = session(MockHTTPClient(data: Data()), store: InMemoryTokenStore(tokens: oldTokens))
+
+        let accessToken = try await account.withAccessToken { $0 }
+
+        #expect(accessToken == "old-access")
+        #expect(account.isSignedIn)
+    }
+
     @Test func restoreTriesAgainAfterAFailedRead() async {
         let store = FaultyTokenStore(tokens: oldTokens)
         store.loadError = KeychainError(status: errSecInteractionNotAllowed)
