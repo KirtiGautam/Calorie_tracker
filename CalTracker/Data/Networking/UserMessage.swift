@@ -18,6 +18,20 @@ func userMessage(for error: any Error) -> LocalizedStringResource {
         }
     }
 
+    if let gramwiseError = error as? GramwiseAPIError {
+        return switch gramwiseError {
+        case .emailTaken: .errorEmailTaken
+        case .invalidCredentials: .errorInvalidCredentials
+        case .invalidToken, .sessionExpired: .errorSessionExpired
+        case .invalidInput: .errorInvalidAccountInput
+        case .unreachable, .server, .goalOutdated: .errorSyncServer
+        }
+    }
+
+    if error is KeychainError {
+        return .errorKeychain
+    }
+
     if error is DecodingError {
         return .errorUnexpectedData
     }

@@ -6,4 +6,9 @@
 
 USDA_API_KEY = DEMO_KEY
 
+// The Gramwise backend that accounts and sync talk to. The default is a backend running on
+// this Mac (`docker compose up --build` in backend/). Put a deployed https URL in Secrets.xcconfig.
+// `$()` keeps xcconfig from reading `//` as the start of a comment.
+GRAMWISE_API_BASE_URL = http:/$()/localhost:8000
+
 #include? "Secrets.xcconfig"

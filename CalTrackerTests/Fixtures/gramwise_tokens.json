@@ -1,0 +1,10 @@
+{
+  "access_token": "test-access-token",
+  "refresh_token": "test-refresh-token",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "user": {
+    "id": "148a1950-9ea0-4a7c-af35-126a8707de58",
+    "email": "ada@example.com"
+  }
+}
