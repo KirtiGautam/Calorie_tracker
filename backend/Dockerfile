@@ -62,8 +62,10 @@ COPY migrations ./migrations
 USER app
 EXPOSE 8000
 
+# Liveness only: probing /health/ready would mark the API unhealthy whenever Postgres is down,
+# and an orchestrator that restarts unhealthy containers would then restart it in a loop.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD ["python", "-c", "import urllib.request, sys; sys.exit(urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2).status != 200)"]
+    CMD ["python", "-c", "import urllib.request, sys; sys.exit(urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status != 200)"]
 
 # Plain uvicorn instead of `fastapi run`: the FastAPI CLI and the rest of fastapi[standard]
 # are dev-only, which keeps them out of the image. uvloop and httptools are picked up automatically.
