@@ -13,6 +13,66 @@
         }
       }
     },
+    "accountModeCreate" : {
+      "comment" : "Picker option on the account sheet for making a new account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Account"
+          }
+        }
+      }
+    },
+    "accountModeField" : {
+      "comment" : "Accessibility label of the picker that switches the account form between creating an account and signing in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account"
+          }
+        }
+      }
+    },
+    "accountModeSignIn" : {
+      "comment" : "Picker option on the account sheet for signing in to an existing account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In"
+          }
+        }
+      }
+    },
+    "accountSignedOutFooter" : {
+      "comment" : "Explanation below the account form while signed out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An account backs up your log and targets, and brings them back on a new device or after reinstalling. It’s optional."
+          }
+        }
+      }
+    },
+    "accountTitle" : {
+      "comment" : "Title of the account sheet, opened from the cloud on Today.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account"
+          }
+        }
+      }
+    },
     "activityExtraActive" : {
       "comment" : "Activity level: very hard exercise or a physical job.",
       "extractionState" : "manual",
@@ -157,6 +217,54 @@
         }
       }
     },
+    "createAccountAction" : {
+      "comment" : "Button that creates a new account from the email and password.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Account"
+          }
+        }
+      }
+    },
+    "deleteAccountAction" : {
+      "comment" : "Destructive button that permanently deletes the account and its backup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Account"
+          }
+        }
+      }
+    },
+    "deleteAccountConfirmMessage" : {
+      "comment" : "Message of the confirmation shown before deleting the account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This permanently deletes your account and its backup. Your log and targets stay on this device."
+          }
+        }
+      }
+    },
+    "deleteAccountConfirmTitle" : {
+      "comment" : "Title of the confirmation shown before deleting the account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete your account?"
+          }
+        }
+      }
+    },
     "deleteFailedTitle" : {
       "comment" : "Alert title when a logged entry couldn't be deleted.",
       "extractionState" : "manual",
@@ -165,6 +273,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn’t Delete Entry"
+          }
+        }
+      }
+    },
+    "doneAction" : {
+      "comment" : "Button that closes the account sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
+    "emailField" : {
+      "comment" : "Label of the email field on the account sheet, and of the signed-in email row.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email"
           }
         }
       }
@@ -277,6 +409,18 @@
         }
       }
     },
+    "errorPasswordTooShort" : {
+      "comment" : "Error when the new password is shorter than 8 characters.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use a password with at least 8 characters."
+          }
+        }
+      }
+    },
     "errorRateLimited" : {
       "comment" : "Error when a food database rejects requests for being too frequent.",
       "extractionState" : "manual",
@@ -309,6 +453,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You’ve been signed out. Sign in again to keep backing up."
+          }
+        }
+      }
+    },
+    "errorSyncRefused" : {
+      "comment" : "Error when the Gramwise backend refuses some synced changes, for example a day with too many foods or a device clock that's far off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some changes couldn’t be backed up. They’re still safe on this device."
           }
         }
       }
@@ -465,6 +621,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Height (cm)"
+          }
+        }
+      }
+    },
+    "lastSyncLabel" : {
+      "comment" : "Label of the row showing when the log was last backed up. The value is a relative time such as “5 minutes ago”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last Sync"
+          }
+        }
+      }
+    },
+    "lastSyncNever" : {
+      "comment" : "Value of the last sync row before the first successful sync.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not yet"
           }
         }
       }
@@ -865,6 +1045,30 @@
         }
       }
     },
+    "passwordField" : {
+      "comment" : "Label of the password field on the account sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password"
+          }
+        }
+      }
+    },
+    "passwordRequirement" : {
+      "comment" : "Hint below the password field when creating an account. %1$lld is the minimum number of characters, such as 8.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use at least %1$lld characters."
+          }
+        }
+      }
+    },
     "pastDayLogSection" : {
       "comment" : "Header above the list of foods logged on a past day, shown instead of “Logged Today”.",
       "extractionState" : "manual",
@@ -1057,6 +1261,42 @@
         }
       }
     },
+    "signInAction" : {
+      "comment" : "Button that signs in to an existing account with the email and password.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In"
+          }
+        }
+      }
+    },
+    "signOutAction" : {
+      "comment" : "Button that signs out of the account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out"
+          }
+        }
+      }
+    },
+    "signOutFooter" : {
+      "comment" : "Explanation below the sign-out button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signing out keeps your log and targets on this device."
+          }
+        }
+      }
+    },
     "sourceOpenFoodFacts" : {
       "comment" : "Badge naming the Open Food Facts database. Proper name.",
       "extractionState" : "manual",
@@ -1077,6 +1317,90 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "USDA"
+          }
+        }
+      }
+    },
+    "syncFailedLabel" : {
+      "comment" : "Spoken label of the orange cloud on Today when the last sync failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync failed"
+          }
+        }
+      }
+    },
+    "syncFooter" : {
+      "comment" : "Explanation below the sync details while signed in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your log and targets sync automatically when they change and when you open the app."
+          }
+        }
+      }
+    },
+    "syncNowAction" : {
+      "comment" : "Button on the account sheet that backs up and restores right away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Now"
+          }
+        }
+      }
+    },
+    "syncSignedOutLabel" : {
+      "comment" : "Spoken label of the red outline cloud on Today when there's no account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not backed up. Create an account or sign in."
+          }
+        }
+      }
+    },
+    "syncStatusHint" : {
+      "comment" : "Spoken hint of the cloud button on Today.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens your account."
+          }
+        }
+      }
+    },
+    "syncSyncingLabel" : {
+      "comment" : "Spoken label of the cloud on Today while a sync is running.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing"
+          }
+        }
+      }
+    },
+    "syncUpToDateLabel" : {
+      "comment" : "Spoken label of the green cloud on Today when the log is synced.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backed up"
           }
         }
       }

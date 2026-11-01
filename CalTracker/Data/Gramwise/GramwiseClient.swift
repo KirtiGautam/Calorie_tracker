@@ -127,6 +127,9 @@ nonisolated struct GramwiseClient: GramwiseAPI {
         case "invalid_token": .invalidToken
         case "validation_error": .invalidInput
         case "goal_outdated": .goalOutdated
+        case "invalid_goal_date": .invalidGoalDate
+        case "too_many_foods": .tooManyFoods
+        case "invalid_cursor": .invalidCursor
         default: .server(status: status)
         }
     }

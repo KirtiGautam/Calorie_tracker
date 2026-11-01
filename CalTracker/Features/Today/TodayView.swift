@@ -54,6 +54,9 @@ struct TodayView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(.targetsAction, systemImage: "target", action: showTargets)
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    SyncStatusButton(status: dependencies.sync.status, action: showAccount)
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button(.addFood, systemImage: "plus", action: showSearch)
                 }
@@ -77,7 +80,12 @@ struct TodayView: View {
                 LogFoodView(viewModel: dependencies.makeLogFoodViewModel(food: food), onLogged: didLog)
             case .targets:
                 TargetsView(viewModel: dependencies.makeTargetsViewModel())
+            case .account:
+                AccountView(viewModel: dependencies.makeAccountViewModel())
             }
+        }
+        .task {
+            dependencies.sync.requestSync()
         }
         .sensoryFeedback(.success, trigger: confirmation) { _, newValue in
             newValue != nil
@@ -86,7 +94,7 @@ struct TodayView: View {
             await hideConfirmationAfterDelay()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            refreshReferenceDate(for: newPhase)
+            sceneDidChange(to: newPhase)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             refreshReferenceDate()
@@ -113,6 +121,10 @@ struct TodayView: View {
 
     private func showTargets() {
         sheet = .targets
+    }
+
+    private func showAccount() {
+        sheet = .account
     }
 
     private func showLogFood(_ food: FoodItem) {
@@ -142,9 +154,11 @@ struct TodayView: View {
         }
     }
 
-    private func refreshReferenceDate(for phase: ScenePhase) {
+    /// Rolls the log over and syncs whenever the app comes back to the foreground.
+    private func sceneDidChange(to phase: ScenePhase) {
         if phase == .active {
             refreshReferenceDate()
+            dependencies.sync.requestSync()
         }
     }
 
@@ -172,5 +186,5 @@ struct TodayView: View {
     }
     return TodayView()
         .modelContainer(container)
-        .environment(\.dependencies, .live(modelContext: container.mainContext))
+        .environment(\.dependencies, .live(modelContext: container.mainContext, tokenStore: InMemoryTokenStore()))
 }

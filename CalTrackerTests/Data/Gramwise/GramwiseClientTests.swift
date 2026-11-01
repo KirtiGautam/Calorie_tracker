@@ -125,6 +125,9 @@ struct GramwiseClientTests {
         ("invalid_token", 401, .invalidToken),
         ("validation_error", 422, .invalidInput),
         ("goal_outdated", 409, .goalOutdated),
+        ("invalid_goal_date", 422, .invalidGoalDate),
+        ("too_many_foods", 422, .tooManyFoods),
+        ("invalid_cursor", 422, .invalidCursor),
         ("internal_error", 500, .server(status: 500)),
     ])
     func mapsTheErrorEnvelope(code: String, status: Int, expected: GramwiseAPIError) async throws {
