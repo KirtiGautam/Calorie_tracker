@@ -107,6 +107,8 @@ final class SyncEngine {
     }
 
     private func syncOnce() async {
+        // Reads the saved sign-in on the first pass, and on later ones until the Keychain can be read.
+        await account.restore()
         guard let user = account.user else {
             status = .signedOut
             return

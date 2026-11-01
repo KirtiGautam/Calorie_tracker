@@ -129,7 +129,7 @@ struct AccountView: View {
         errorSection
 
         Section {
-            Button(.signOutAction, action: viewModel.signOut)
+            Button(.signOutAction, action: signOut)
         } footer: {
             Text(.signOutFooter)
         }
@@ -158,6 +158,12 @@ struct AccountView: View {
     private func submit() {
         Task {
             await viewModel.submit()
+        }
+    }
+
+    private func signOut() {
+        Task {
+            await viewModel.signOut()
         }
     }
 
