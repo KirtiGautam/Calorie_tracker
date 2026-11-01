@@ -4,6 +4,7 @@ from fastapi.routing import APIRoute
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.exceptions import register_exception_handlers
+from app.goals.router import router as goals_router
 from app.health.router import router as health_router
 from app.users.router import router as users_router
 
@@ -22,3 +23,4 @@ register_exception_handlers(app)
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(goals_router)
