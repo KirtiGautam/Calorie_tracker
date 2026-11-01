@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -7,6 +7,7 @@ from sqlmodel import Session
 
 from app.daily_logs import service
 from app.daily_logs.exceptions import InvalidCursor
+from app.daily_logs.models import DailyLog
 from app.daily_logs.schemas import AddedFood, LogChanges, RemovedFood
 from app.users.models import AppUser
 
@@ -115,6 +116,30 @@ def test_apply_changes_stores_json_ready_items(session: Session) -> None:
     assert log.foods[0]["logged_at"] == "2026-10-29T08:00:00Z"
     assert "log_date" not in log.foods[0]
     assert log.energy_kcal == 81
+
+
+def test_apply_changes_stays_after_a_change_stamped_by_a_clock_ahead(
+    session: Session,
+) -> None:
+    user = AppUser(email="ada@example.com", hashed_password="x")
+    session.add(user)
+    session.commit()
+    # Another replica, whose clock runs an hour ahead, saved this day.
+    ahead = DailyLog(
+        user_id=user.id,
+        log_date=date(2026, 10, 28),
+        updated_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    session.add(ahead)
+    session.commit()
+    cursor = service.encode_cursor(ahead)
+    removal = RemovedFood(log_date=date(2026, 10, 29), entry_id=uuid.uuid4())
+
+    [log] = service.apply_changes(session, user.id, LogChanges(removed=[removal]))
+    days, _, _ = service.list_changed(session, user.id, cursor, limit=100)
+
+    assert log.updated_at > ahead.updated_at
+    assert [day.log_date for day in days] == [date(2026, 10, 29)]
 
 
 @pytest.mark.parametrize(

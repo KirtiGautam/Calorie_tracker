@@ -4,10 +4,10 @@ import json
 import uuid
 from collections import defaultdict
 from collections.abc import Iterable
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import tuple_
+from sqlalchemy import func, tuple_
 from sqlmodel import Session, col, select
 
 from app.daily_logs.exceptions import InvalidCursor, TooManyFoods
@@ -71,7 +71,15 @@ def apply_changes(
     session.exec(
         select(AppUser.id).where(AppUser.id == user_id).with_for_update()
     ).one()
+    # Each API replica has its own clock, and one running behind could stamp this push before a
+    # change a pull has already passed. Staying after the account's latest change keeps every
+    # cursor handed out so far behind this push, whatever the clocks say.
     now = datetime.now(UTC)
+    latest = session.exec(
+        select(func.max(col(DailyLog.updated_at))).where(DailyLog.user_id == user_id)
+    ).one()
+    if latest is not None and latest >= now:
+        now = latest + timedelta(microseconds=1)
 
     logs: list[DailyLog] = []
     for log_date in days:
