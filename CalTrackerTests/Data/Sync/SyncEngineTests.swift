@@ -78,6 +78,60 @@ struct SyncEngineTests {
         #expect(server.foods(for: tokens.user, on: breakfastDay)?.map(\.entryID) == [syncID])
     }
 
+    @Test func entriesPastTheDailyLimitStayOnTheDevice() async throws {
+        let tokens = try await signUp()
+        let device = SyncTestDevice(server: server, tokens: tokens)
+        for minute in 0...SyncEngine.maxFoodsPerDay {
+            try device.store.log(banana, grams: 10, loggedAt: breakfast.addingTimeInterval(Double(minute) * 60))
+        }
+
+        await device.sync()
+
+        #expect(device.engine.status == .upToDate(Date(timeIntervalSince1970: 1_800_000_000)))
+        #expect(server.foods(for: tokens.user, on: breakfastDay)?.count == SyncEngine.maxFoodsPerDay)
+        let entries = try device.entries()
+        #expect(entries.count == SyncEngine.maxFoodsPerDay + 1)
+        #expect(entries.last?.syncedDay == nil)
+    }
+
+    @Test func aDayFilledOnAnotherDeviceHoldsBackOnlyItsExtraEntries() async throws {
+        let tokens = try await signUp()
+        let phone = SyncTestDevice(server: server, tokens: tokens)
+        let tablet = SyncTestDevice(server: server, tokens: tokens)
+        for minute in 0..<SyncEngine.maxFoodsPerDay {
+            try phone.store.log(banana, grams: 10, loggedAt: breakfast.addingTimeInterval(Double(minute) * 60))
+        }
+        await phone.sync()
+        try tablet.store.log(nutella, grams: 15, loggedAt: breakfast)
+        try tablet.store.log(nutella, grams: 15, loggedAt: breakfast.addingTimeInterval(86_400))
+
+        await tablet.sync()
+        #expect(tablet.engine.status == .failed(.errorSyncRefused))
+        #expect(try tablet.entries().count == SyncEngine.maxFoodsPerDay + 2)
+        await tablet.sync()
+
+        #expect(tablet.engine.status == .upToDate(Date(timeIntervalSince1970: 1_800_000_000)))
+        #expect(server.foods(for: tokens.user, on: breakfastDay)?.count == SyncEngine.maxFoodsPerDay)
+        #expect(server.foods(for: tokens.user, on: "2026-12-24")?.map(\.foodID) == [nutella.id])
+    }
+
+    @Test func namesAreCutToTheServersLimitInUnicodeScalars() {
+        // Each thumbs-up with a skin tone is one character but two Unicode scalars.
+        let entry = FoodLogEntry(food: .fixture(name: String(repeating: "👍🏽", count: 300)), grams: 100, loggedAt: breakfast)
+
+        let food = SyncEngine.loggedFood(for: entry, id: UUID())
+
+        #expect(food.name.unicodeScalars.count == SyncEngine.maxNameLength)
+    }
+
+    @Test func aFoodIDLongerThanTheServerAllowsDoesNotSync() {
+        let longest = FoodLogEntry(food: .fixture(id: "off-" + String(repeating: "1", count: 60)), grams: 100, loggedAt: breakfast)
+        let tooLong = FoodLogEntry(food: .fixture(id: "off-" + String(repeating: "1", count: 61)), grams: 100, loggedAt: breakfast)
+
+        #expect(SyncEngine.isSyncable(longest))
+        #expect(SyncEngine.isSyncable(tooLong) == false)
+    }
+
     // MARK: - Deletions
 
     @Test func deletingASyncedEntryPushesARemoval() async throws {
@@ -90,6 +144,43 @@ struct SyncEngineTests {
         #expect(try device.tombstones().count == 1)
         await device.sync()
 
+        #expect(server.foods(for: tokens.user, on: breakfastDay)?.isEmpty == true)
+        #expect(try device.tombstones().isEmpty)
+    }
+
+    @Test func anEntryDeletedAfterAPushWhoseResponseWasLostStaysDeleted() async throws {
+        let tokens = try await signUp()
+        let device = SyncTestDevice(server: server, tokens: tokens)
+        try device.store.log(banana, grams: 120, loggedAt: breakfast)
+        server.loseNextPushResponse()
+        await device.sync()
+        #expect(device.engine.status == .failed(.errorTimeout))
+        #expect(server.foods(for: tokens.user, on: breakfastDay)?.count == 1)
+
+        try device.store.delete(try #require(try device.entries().first))
+        await device.sync()
+
+        #expect(try device.entries().isEmpty)
+        #expect(server.foods(for: tokens.user, on: breakfastDay)?.isEmpty == true)
+        #expect(try device.tombstones().isEmpty)
+    }
+
+    @Test func anEntryDeletedWhileItsPushIsInFlightGetsARemoval() async throws {
+        let tokens = try await signUp()
+        let device = SyncTestDevice(server: server, tokens: tokens)
+        try device.store.log(banana, grams: 120, loggedAt: breakfast)
+        server.onPush {
+            if let entry = try? device.entries().first {
+                try? device.store.delete(entry)
+            }
+        }
+
+        await device.sync()
+        #expect(try device.entries().isEmpty)
+        #expect(try device.tombstones().count == 1)
+        await device.sync()
+
+        #expect(try device.entries().isEmpty)
         #expect(server.foods(for: tokens.user, on: breakfastDay)?.isEmpty == true)
         #expect(try device.tombstones().isEmpty)
     }
@@ -428,6 +519,37 @@ struct SyncEngineTests {
 
         #expect(device.engine.status == .failed(.errorOffline))
         #expect(try device.entries().first?.syncedDay == nil)
+    }
+
+    @Test func aRefusedPushStillPullsOtherDevicesChanges() async throws {
+        let tokens = try await signUp()
+        let phone = SyncTestDevice(server: server, tokens: tokens)
+        let tablet = SyncTestDevice(server: server, tokens: tokens)
+        try phone.store.log(banana, grams: 120, loggedAt: breakfast)
+        await phone.sync()
+        try tablet.store.log(nutella, grams: 15, loggedAt: breakfast.addingTimeInterval(60))
+        server.refuse("pushChanges", with: .invalidInput)
+
+        await tablet.sync()
+
+        #expect(tablet.engine.status == .failed(.errorSyncRefused))
+        #expect(try tablet.entries().map(\.foodID) == [banana.id, nutella.id])
+    }
+
+    @Test func aCursorTheServerRefusesStartsThePullOver() async throws {
+        let tokens = try await signUp()
+        let phone = SyncTestDevice(server: server, tokens: tokens)
+        let tablet = SyncTestDevice(server: server, tokens: tokens)
+        await tablet.sync()
+        try phone.store.log(banana, grams: 120, loggedAt: breakfast)
+        await phone.sync()
+        tablet.isolated.defaults.set("not-a-cursor", forKey: "sync.cursor")
+
+        await tablet.sync()
+
+        #expect(tablet.engine.status == .upToDate(Date(timeIntervalSince1970: 1_800_000_000)))
+        #expect(try tablet.entries().map(\.foodID) == [banana.id])
+        #expect(tablet.isolated.defaults.string(forKey: "sync.cursor") != "not-a-cursor")
     }
 
     @Test func anUnreachableServerSaysSo() async throws {

@@ -25,6 +25,7 @@ func userMessage(for error: any Error) -> LocalizedStringResource {
         case .invalidToken, .sessionExpired: .errorSessionExpired
         case .invalidInput: .errorInvalidAccountInput
         case .unreachable, .server, .goalOutdated: .errorSyncServer
+        case .invalidGoalDate, .tooManyFoods, .invalidCursor: .errorSyncRefused
         }
     }
 

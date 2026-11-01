@@ -457,6 +457,18 @@
         }
       }
     },
+    "errorSyncRefused" : {
+      "comment" : "Error when the Gramwise backend refuses some synced changes, for example a day with too many foods or a device clock that's far off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some changes couldn’t be backed up. They’re still safe on this device."
+          }
+        }
+      }
+    },
     "errorSyncServer" : {
       "comment" : "Error when the Gramwise backend can't be reached or fails.",
       "extractionState" : "manual",

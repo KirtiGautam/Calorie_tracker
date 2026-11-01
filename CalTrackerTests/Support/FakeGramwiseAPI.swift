@@ -3,7 +3,8 @@ import Synchronization
 @testable import CalTracker
 
 /// An in-memory Gramwise backend with the real server's rules: case-insensitive emails, goals that only move forward,
-/// per-day merges by entry ID that keep emptied days, and keyset-style pages of changed days.
+/// per-day merges by entry ID that keep emptied days and hold at most 200 foods, and keyset-style pages of changed
+/// days that refuse cursors the server didn't hand out.
 nonisolated final class FakeGramwiseAPI: GramwiseAPI {
     /// One stored day.
     struct Day {
@@ -25,12 +26,15 @@ nonisolated final class FakeGramwiseAPI: GramwiseAPI {
         var sequence = 0
         var calls: [String] = []
         var failure: (any Error)?
+        var refusals: [String: GramwiseAPIError] = [:]
+        var losesNextPushResponse = false
     }
 
     /// How many days `dailyLogs(after:accessToken:)` returns per page.
     let pageSize: Int
 
     private let state = Mutex(State())
+    private let pushHook = Mutex<(@MainActor @Sendable () -> Void)?>(nil)
 
     /// Creates an empty server that pages `pageSize` days at a time.
     init(pageSize: Int = 100) {
@@ -42,6 +46,21 @@ nonisolated final class FakeGramwiseAPI: GramwiseAPI {
     /// Makes every call throw `error` until it's set back to `nil`.
     func fail(with error: (any Error)?) {
         state.withLock { $0.failure = error }
+    }
+
+    /// Makes every `call`, such as `pushChanges`, throw `error` until it's set back to `nil`. Other calls still work.
+    func refuse(_ call: String, with error: GramwiseAPIError?) {
+        state.withLock { $0.refusals[call] = error }
+    }
+
+    /// Stores the next push, then throws a timeout instead of answering, as if the response had been lost.
+    func loseNextPushResponse() {
+        state.withLock { $0.losesNextPushResponse = true }
+    }
+
+    /// Runs `action` on the main actor during every push, after it's stored, so tests can act while it's in flight.
+    func onPush(_ action: @escaping @MainActor @Sendable () -> Void) {
+        pushHook.withLock { $0 = action }
     }
 
     /// Invalidates every access token, as if they had expired. Refresh tokens keep working.
@@ -164,6 +183,21 @@ nonisolated final class FakeGramwiseAPI: GramwiseAPI {
     }
 
     func pushChanges(_ changes: GramwiseLogChanges, accessToken: String) async throws -> [GramwiseDailyLog] {
+        let touched = try storeChanges(changes, accessToken: accessToken)
+        if let action = pushHook.withLock({ $0 }) {
+            await action()
+        }
+        let losesResponse = state.withLock { state in
+            defer { state.losesNextPushResponse = false }
+            return state.losesNextPushResponse
+        }
+        if losesResponse {
+            throw URLError(.timedOut)
+        }
+        return touched
+    }
+
+    private func storeChanges(_ changes: GramwiseLogChanges, accessToken: String) throws -> [GramwiseDailyLog] {
         try state.withLock { state in
             let userID = try Self.authorize("pushChanges", accessToken, in: &state)
             let touched = Set(changes.added.map(\.logDate)).union(changes.removed.map(\.logDate))
@@ -180,6 +214,8 @@ nonisolated final class FakeGramwiseAPI: GramwiseAPI {
                 for removed in changes.removed where removed.logDate == dayKey {
                     byID[removed.entryID] = nil
                 }
+                // Like the server, a day over the limit refuses the whole request.
+                guard byID.count <= Self.maxFoodsPerDay else { throw GramwiseAPIError.tooManyFoods }
                 days[dayKey] = Day(foods: byID.values.sorted { $0.loggedAt < $1.loggedAt }, sequence: state.sequence)
             }
             state.days[userID] = days
@@ -191,6 +227,9 @@ nonisolated final class FakeGramwiseAPI: GramwiseAPI {
         try state.withLock { state in
             let userID = try Self.authorize("dailyLogs", accessToken, in: &state)
             let position = cursor.flatMap(Self.position(from:))
+            if cursor != nil && position == nil {
+                throw GramwiseAPIError.invalidCursor
+            }
             let changed = (state.days[userID] ?? [:])
                 .filter { key, day in position.map { (day.sequence, key) > $0 } ?? true }
                 .sorted { ($0.value.sequence, $0.key) < ($1.value.sequence, $1.key) }
@@ -206,10 +245,16 @@ nonisolated final class FakeGramwiseAPI: GramwiseAPI {
 
     // MARK: - Helpers
 
+    /// The most foods the server keeps for one day.
+    static let maxFoodsPerDay = 200
+
     private static func begin(_ call: String, in state: inout State) throws {
         state.calls.append(call)
         if let failure = state.failure {
             throw failure
+        }
+        if let refusal = state.refusals[call] {
+            throw refusal
         }
     }
 

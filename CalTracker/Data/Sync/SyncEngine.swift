@@ -5,8 +5,9 @@ import SwiftData
 /// Keeps the log and the goal in step with the Gramwise backend, in both directions.
 ///
 /// One pass pushes local changes, reconciles the goal (the newest day's goal wins), then pulls the days that
-/// changed on the server and restores what's missing. Overlapping requests share one running pass,
-/// plus one more afterwards when something changed during it.
+/// changed on the server and restores what's missing. When the server refuses the push or the goal, the other
+/// steps still run, so this device keeps getting the other devices' changes. Overlapping requests share one
+/// running pass, plus one more afterwards when something changed during it.
 @Observable
 final class SyncEngine {
     /// How long `scheduleSync()` waits for more changes before syncing.
@@ -115,9 +116,18 @@ final class SyncEngine {
         status = .syncing
         do {
             try resetMarkersIfAccountChanged(to: user.id)
-            try await push()
-            try await syncGoal()
-            try await pull()
+            var refusal: GramwiseAPIError?
+            for step in [push, syncGoal, pull] as [() async throws -> Void] {
+                do {
+                    try await step()
+                } catch let error as GramwiseAPIError where error.isRefusal {
+                    // Sending it again won't help, but the other steps can still succeed.
+                    refusal = refusal ?? error
+                }
+            }
+            if let refusal {
+                throw refusal
+            }
             let finishedAt = now()
             lastSyncedAt = finishedAt
             defaults.set(finishedAt, forKey: Key.lastSyncedAt)
@@ -127,8 +137,17 @@ final class SyncEngine {
         } catch GramwiseAPIError.sessionExpired {
             status = .signedOut
         } catch {
-            status = .failed(userMessage(for: error))
+            status = .failed(Self.message(for: error))
         }
+    }
+
+    /// The message for a failed pass. A refusal gets a sync message, because the usual one for `invalidInput`
+    /// is about the account form.
+    static func message(for error: any Error) -> LocalizedStringResource {
+        if let apiError = error as? GramwiseAPIError, apiError.isRefusal {
+            return .errorSyncRefused
+        }
+        return userMessage(for: error)
     }
 
     // MARK: - Account switches
@@ -146,7 +165,7 @@ final class SyncEngine {
         try modelContext.delete(model: FoodLogDeletion.self)
         try modelContext.save()
 
-        for key in [Key.cursor, Key.goalPushedAt, Key.lastSyncedAt] {
+        for key in [Key.cursor, Key.goalPushedAt, Key.lastSyncedAt, Key.unconfirmed] {
             defaults.removeObject(forKey: key)
         }
         lastSyncedAt = nil
@@ -156,17 +175,29 @@ final class SyncEngine {
     // MARK: - Push
 
     /// Sends entries that haven't been pushed and the pending deletions, in batches the server accepts.
+    ///
+    /// Entries that don't fit in their day stay on this device, unsynced.
     private func push() async throws {
+        try tombstoneDeletionsFromUnconfirmedPush()
+
         let pending = try modelContext.fetch(FetchDescriptor<FoodLogEntry>(
             predicate: FoodLogEntry.notSynced,
             sortBy: [SortDescriptor(\.loggedAt)]
         ))
-        var added: [(entry: FoodLogEntry, food: GramwiseAddedFood)] = []
+        var room: [String: Int] = [:]
+        var added: [PendingFood] = []
         for entry in pending where Self.isSyncable(entry) {
+            let day = dayKey(for: entry.loggedAt)
+            let space = try room[day] ?? Self.maxFoodsPerDay - modelContext.fetchCount(FetchDescriptor(predicate: FoodLogEntry.synced(onDay: day)))
+            guard space > 0 else {
+                room[day] = 0
+                continue
+            }
+            room[day] = space - 1
             // Entries from schema version 1 get their ID here, saved before it's sent.
             let syncID = entry.syncID ?? UUID()
             entry.syncID = syncID
-            added.append((entry, GramwiseAddedFood(logDate: dayKey(for: entry.loggedAt), food: Self.loggedFood(for: entry, id: syncID))))
+            added.append((entry, GramwiseAddedFood(logDate: day, food: Self.loggedFood(for: entry, id: syncID))))
         }
         try modelContext.save()
 
@@ -176,27 +207,80 @@ final class SyncEngine {
 
         let addedBatches = Self.batches(of: added, size: GramwiseLogChanges.maxCount)
         let removedBatches = Self.batches(of: removed, size: GramwiseLogChanges.maxCount)
+        var refusal: GramwiseAPIError?
         for index in 0..<max(addedBatches.count, removedBatches.count) {
-            let addedBatch = index < addedBatches.count ? addedBatches[index] : []
+            // After a refused day, the rest of this pass's additions wait too.
+            let addedBatch = index < addedBatches.count && refusal == nil ? addedBatches[index] : []
             let removedBatch = index < removedBatches.count ? removedBatches[index] : []
-            let changes = GramwiseLogChanges(added: addedBatch.map(\.food), removed: removedBatch.map(\.food))
+            do {
+                try await send(addedBatch, removedBatch)
+            } catch GramwiseAPIError.tooManyFoods where addedBatch.isEmpty == false {
+                // Another device filled a day this one hasn't pulled yet. The pull brings that day's foods, so the
+                // next pass holds back the entries that don't fit. The removals can still go now.
+                refusal = .tooManyFoods
+                try await send([], removedBatch)
+            }
+        }
+        if let refusal {
+            throw refusal
+        }
+    }
+
+    /// Sends one batch, then marks its entries as synced and drops its tombstones.
+    private func send(_ added: ArraySlice<PendingFood>, _ removed: ArraySlice<PendingRemoval>) async throws {
+        guard added.isEmpty == false || removed.isEmpty == false else { return }
+        let changes = GramwiseLogChanges(added: added.map(\.food), removed: removed.map(\.food))
+        rememberUnconfirmed(added.map(\.food))
+        do {
             _ = try await account.withAccessToken { [api] accessToken in
                 try await api.pushChanges(changes, accessToken: accessToken)
             }
-
-            for (entry, food) in addedBatch {
-                if entry.isDeleted || entry.modelContext == nil {
-                    // Deleted while the push was in flight, before it counted as synced, so the server needs a removal.
-                    modelContext.insert(FoodLogDeletion(syncID: food.food.entryID, day: food.logDate))
-                } else {
-                    entry.syncedDay = food.logDate
-                }
-            }
-            for (tombstone, _) in removedBatch where tombstone.isDeleted == false {
-                modelContext.delete(tombstone)
-            }
-            try modelContext.save()
+        } catch let error as GramwiseAPIError where error.isRefusal {
+            // The server answered without storing anything.
+            defaults.removeObject(forKey: Key.unconfirmed)
+            throw error
         }
+
+        for (entry, food) in added {
+            if entry.isDeleted || entry.modelContext == nil {
+                // Deleted while the push was in flight, before it counted as synced, so the server needs a removal.
+                modelContext.insert(FoodLogDeletion(syncID: food.food.entryID, day: food.logDate))
+            } else {
+                entry.syncedDay = food.logDate
+            }
+        }
+        for (tombstone, _) in removed where tombstone.isDeleted == false {
+            modelContext.delete(tombstone)
+        }
+        try modelContext.save()
+        defaults.removeObject(forKey: Key.unconfirmed)
+    }
+
+    /// Keeps the entries being sent, with their days, until the response is handled.
+    ///
+    /// If the response never arrives, for example after a timeout or when the app is suspended, the server may
+    /// have stored them even though they don't count as synced here.
+    private func rememberUnconfirmed(_ foods: [GramwiseAddedFood]) {
+        guard foods.isEmpty == false else { return }
+        let days = Dictionary(foods.map { ($0.food.entryID.uuidString, $0.logDate) }) { first, _ in first }
+        defaults.set(days, forKey: Key.unconfirmed)
+    }
+
+    /// Adds a removal for each entry of an earlier push whose response never arrived, if it has been deleted since.
+    ///
+    /// Such an entry didn't count as synced, so deleting it left no tombstone. The server may still have it, and
+    /// without a removal the next pull would restore it. The server ignores removals of entries it doesn't have.
+    private func tombstoneDeletionsFromUnconfirmedPush() throws {
+        guard let unconfirmed = defaults.dictionary(forKey: Key.unconfirmed) as? [String: String] else { return }
+        let identified = try modelContext.fetch(FetchDescriptor<FoodLogEntry>(predicate: #Predicate { $0.syncID != nil }))
+        let tombstoned = try modelContext.fetch(FetchDescriptor<FoodLogDeletion>()).map(\.syncID)
+        let known = Set(identified.compactMap(\.syncID)).union(tombstoned)
+        for (id, day) in unconfirmed {
+            guard let syncID = UUID(uuidString: id), known.contains(syncID) == false else { continue }
+            modelContext.insert(FoodLogDeletion(syncID: syncID, day: day))
+        }
+        try modelContext.save()
+        defaults.removeObject(forKey: Key.unconfirmed)
     }
 
     // MARK: - Goal
@@ -281,9 +365,21 @@ final class SyncEngine {
         // A day can change again between pages. Keep its latest version.
         var days: [String: GramwiseDailyLog] = [:]
         var hasMore = true
+        var canStartOver = true
         while hasMore {
-            let page = try await account.withAccessToken { [api, cursor] accessToken in
-                try await api.dailyLogs(after: cursor, accessToken: accessToken)
+            let page: GramwiseDailyLogPage
+            do {
+                page = try await account.withAccessToken { [api, cursor] accessToken in
+                    try await api.dailyLogs(after: cursor, accessToken: accessToken)
+                }
+            } catch GramwiseAPIError.invalidCursor where cursor != nil && canStartOver {
+                // The server no longer accepts the cursor, for example after its data was restored from a backup.
+                // Pulling every day again is safe: a day that's already here changes nothing.
+                defaults.removeObject(forKey: Key.cursor)
+                cursor = nil
+                days.removeAll()
+                canStartOver = false
+                continue
             }
             for day in page.days {
                 days[day.logDate] = day
@@ -351,9 +447,10 @@ final class SyncEngine {
 
     // MARK: - Mapping
 
-    /// Whether the server accepts `entry`: a USDA or Open Food Facts food and an amount it allows.
+    /// Whether the server accepts `entry`: a USDA or Open Food Facts food ID it allows and an amount it allows.
     static func isSyncable(_ entry: FoodLogEntry) -> Bool {
         entry.foodID.wholeMatch(of: /(usda|off)-[A-Za-z0-9]+/) != nil
+            && entry.foodID.unicodeScalars.count <= maxFoodIDLength
             && entry.grams > 0
             && entry.grams <= maxGrams
     }
@@ -361,8 +458,14 @@ final class SyncEngine {
     /// The largest amount the server accepts for one entry, in grams.
     static let maxGrams = 5_000.0
 
-    /// The longest name the server accepts.
+    /// The longest food ID the server accepts.
+    static let maxFoodIDLength = 64
+
+    /// The longest name the server accepts, in Unicode scalars, because it counts code points rather than characters.
     static let maxNameLength = 500
+
+    /// The most foods the server keeps for one day, counting every device's foods.
+    static let maxFoodsPerDay = 200
 
     /// The item the server stores for `entry`, with the macros for the amount eaten.
     static func loggedFood(for entry: FoodLogEntry, id: UUID) -> GramwiseLoggedFood {
@@ -371,7 +474,7 @@ final class SyncEngine {
         return GramwiseLoggedFood(
             entryID: id,
             foodID: entry.foodID,
-            name: name.isEmpty ? entry.foodID : String(name.prefix(maxNameLength)),
+            name: name.isEmpty ? entry.foodID : String(String.UnicodeScalarView(name.unicodeScalars.prefix(maxNameLength))),
             grams: entry.grams,
             loggedAt: entry.loggedAt,
             energyKcal: nutrients.energy,
@@ -413,10 +516,17 @@ final class SyncEngine {
         }
     }
 
+    /// An entry being pushed, with the item sent for it.
+    private typealias PendingFood = (entry: FoodLogEntry, food: GramwiseAddedFood)
+
+    /// A tombstone being pushed, with the removal sent for it.
+    private typealias PendingRemoval = (tombstone: FoodLogDeletion, food: GramwiseRemovedFood)
+
     private enum Key {
         static let userID = "sync.userID"
         static let cursor = "sync.cursor"
         static let goalPushedAt = "sync.goalPushedAt"
         static let lastSyncedAt = "sync.lastSyncedAt"
+        static let unconfirmed = "sync.unconfirmed"
     }
 }
