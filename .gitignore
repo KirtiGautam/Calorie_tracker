@@ -10,3 +10,5 @@ build/
 # macOS
 .DS_Store
 PLAN.md
+.env
+foods.csv

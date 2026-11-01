@@ -1,0 +1,52 @@
+[project]
+name = "gramwise-backend"
+version = "0.1.0"
+description = "Backend API for Gramwise."
+requires-python = ">=3.14"
+dependencies = [
+    "email-validator>=2.3.0",
+    "fastapi>=0.162.0",
+    "httptools>=0.9.0",
+    "psycopg[binary]>=3.3.6",
+    "pwdlib[argon2]>=0.3.1",
+    "pydantic-settings>=2.16.2",
+    "pyjwt>=2.15.1",
+    "sqlmodel>=0.0.48",
+    "uvicorn>=0.54.0",
+    "uvloop>=0.23.0",
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.17.0",
+    "fastapi[standard]>=0.162.0",
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+    "ty>=0.0.94",
+]
+
+[tool.uv]
+# The app runs from source, so uv only installs dependencies, not the project itself.
+package = false
+
+[tool.fastapi]
+entrypoint = "app.main:app"
+
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "ASYNC", "FAST", "T20", "S", "PT"]
+ignore = ["E501"]  # line length is the formatter's job
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]  # pytest relies on assert; test secrets are fake
+
+[tool.ty.terminal]
+error-on-warning = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["app"]

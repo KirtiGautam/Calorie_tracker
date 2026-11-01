@@ -1,0 +1,9 @@
+# Allow-list: only what the image needs reaches the build context.
+*
+!app/
+# Migrations ship in the image, so the migrate service can run them.
+!migrations/
+# pyproject.toml and uv.lock are only bind-mounted into the builder and dev stages.
+!pyproject.toml
+!uv.lock
+**/__pycache__

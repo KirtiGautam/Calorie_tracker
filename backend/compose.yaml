@@ -1,0 +1,53 @@
+# `docker compose up --build` builds the image, runs the migrations, then starts the API.
+# Every service reads its settings from .env.
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  # One-shot release step: runs the pending SQL files in migrations/ and exits.
+  # It runs once, before the API, never inside the API's workers.
+  migrate:
+    <<: *hardening
+    build:
+      context: .
+      target: runtime
+    image: gramwise-backend
+    env_file: .env
+    command: ["python", "migrations/migrate.py"]
+    # The image's HEALTHCHECK probes the API, which this container doesn't run.
+    healthcheck:
+      disable: true
+    restart: "no"
+
+  api:
+    <<: *hardening
+    build:
+      context: .
+      target: runtime
+    image: gramwise-backend
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        # The API never starts on a schema the migration failed to reach.
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Lint and tests, with dev dependencies. Only runs on demand:
+  # ./scripts/lint.sh and ./scripts/test.sh start it for you.
+  dev:
+    build:
+      context: .
+      target: dev
+    image: gramwise-backend-dev
+    volumes:
+      - .:/app
+    profiles: ["dev"]
