@@ -1,0 +1,68 @@
+{
+  "days": [
+    {
+      "log_date": "2026-10-28",
+      "energy_kcal": 187.64999999999998,
+      "protein_g": 2.253,
+      "carbs_g": 36.045,
+      "fat_g": 0.396,
+      "foods": [
+        {
+          "entry_id": "9f1b7a52-3e1d-4c0e-9a39-7c5d1e2f0a11",
+          "food_id": "usda-173944",
+          "name": "Bananas, raw",
+          "grams": 120.0,
+          "logged_at": "2026-10-28T08:15:00.250000Z",
+          "energy_kcal": 106.8,
+          "protein_g": 1.308,
+          "carbs_g": 27.42,
+          "fat_g": 0.396
+        },
+        {
+          "entry_id": "0c8e2d4b-6a71-4f39-b5d2-1e9a8c7f3b20",
+          "food_id": "off-3017620422003",
+          "name": "Nutella",
+          "grams": 15.0,
+          "logged_at": "2026-10-28T16:40:00Z",
+          "energy_kcal": 80.85,
+          "protein_g": 0.945,
+          "carbs_g": 8.625,
+          "fat_g": null
+        }
+      ],
+      "updated_at": "2026-10-29T07:41:05.460581Z"
+    },
+    {
+      "log_date": "2026-10-29",
+      "energy_kcal": 154.0,
+      "protein_g": 3.2,
+      "carbs_g": 35.2,
+      "fat_g": 0.2,
+      "foods": [
+        {
+          "entry_id": "5d3f1a9e-2b7c-4e60-8f14-a6c0d9e2b731",
+          "food_id": "usda-2346404",
+          "name": "Sweet potatoes, orange flesh, without skin, raw",
+          "grams": 200.0,
+          "logged_at": "2026-10-29T07:05:00Z",
+          "energy_kcal": 154.0,
+          "protein_g": 3.2,
+          "carbs_g": 35.2,
+          "fat_g": 0.2
+        }
+      ],
+      "updated_at": "2026-10-29T07:41:05.460581Z"
+    },
+    {
+      "log_date": "2026-10-27",
+      "energy_kcal": null,
+      "protein_g": null,
+      "carbs_g": null,
+      "fat_g": null,
+      "foods": [],
+      "updated_at": "2026-10-29T07:41:05.464275Z"
+    }
+  ],
+  "next_cursor": "WyIyMDI2LTEwLTI5VDA3OjQxOjA1LjQ2NDI3NSswMDowMCIsICIyMDI2LTEwLTI3Il0=",
+  "has_more": false
+}

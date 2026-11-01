@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "email_taken",
+    "message": "An account with this email already exists",
+    "details": null
+  }
+}

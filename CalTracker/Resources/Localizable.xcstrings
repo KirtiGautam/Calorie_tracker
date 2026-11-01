@@ -193,6 +193,18 @@
         }
       }
     },
+    "errorEmailTaken" : {
+      "comment" : "Error when creating an account with an email that's already registered.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An account with this email already exists. Sign in instead."
+          }
+        }
+      }
+    },
     "errorGeneric" : {
       "comment" : "Fallback error message for unexpected failures.",
       "extractionState" : "manual",
@@ -205,6 +217,18 @@
         }
       }
     },
+    "errorInvalidAccountInput" : {
+      "comment" : "Error when the server rejects the account form, usually for a malformed email.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check the email address and try again."
+          }
+        }
+      }
+    },
     "errorInvalidAmount" : {
       "comment" : "Error when the person tries to log zero or a negative number of grams.",
       "extractionState" : "manual",
@@ -213,6 +237,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enter an amount greater than 0 g."
+          }
+        }
+      }
+    },
+    "errorInvalidCredentials" : {
+      "comment" : "Error when signing in with a wrong email or password. Deliberately doesn't say which one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That email or password isn’t right."
+          }
+        }
+      }
+    },
+    "errorKeychain" : {
+      "comment" : "Error when the Keychain refuses to save or remove the sign-in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gramwise couldn’t save your sign-in on this device. Try again."
           }
         }
       }
@@ -249,6 +297,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This food database isn’t responding right now. Try again later."
+          }
+        }
+      }
+    },
+    "errorSessionExpired" : {
+      "comment" : "Error when the saved sign-in expired or was revoked and the app signed out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You’ve been signed out. Sign in again to keep backing up."
+          }
+        }
+      }
+    },
+    "errorSyncServer" : {
+      "comment" : "Error when the Gramwise backend can't be reached or fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gramwise’s server isn’t responding right now. Your log is safe on this device. Try again later."
           }
         }
       }
