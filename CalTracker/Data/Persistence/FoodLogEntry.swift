@@ -2,9 +2,9 @@ import Foundation
 import SwiftData
 
 /// The current version of a logged food.
-typealias FoodLogEntry = SchemaV1.FoodLogEntry
+typealias FoodLogEntry = SchemaV2.FoodLogEntry
 
-extension SchemaV1 {
+extension SchemaV2 {
     /// One food the person logged, with the amount they ate.
     @Model
     final class FoodLogEntry {
@@ -31,8 +31,21 @@ extension SchemaV1 {
         /// When the food was logged.
         var loggedAt: Date = Date.now
 
+        /// The ID the server knows the entry by.
+        ///
+        /// New entries get one in `init`. Entries migrated from version 1 have none until their first push.
+        /// It's optional because a migration default would give every old entry the same ID.
+        var syncID: UUID?
+
+        /// The server day (`yyyy-MM-dd`) the entry was pushed to, or `nil` when it hasn't been pushed yet.
+        var syncedDay: String?
+
         /// Creates an entry for `grams` of `food` logged at `loggedAt`.
-        init(food: FoodItem, grams: Double, loggedAt: Date) {
+        ///
+        /// - Parameters:
+        ///   - syncID: The server's ID for the entry. A new one by default.
+        ///   - syncedDay: The server day the entry came from, when it's restored from the server.
+        init(food: FoodItem, grams: Double, loggedAt: Date, syncID: UUID = UUID(), syncedDay: String? = nil) {
             foodID = food.id
             name = food.name
             brand = food.brand
@@ -40,6 +53,8 @@ extension SchemaV1 {
             self.grams = grams
             per100g = food.per100g
             self.loggedAt = loggedAt
+            self.syncID = syncID
+            self.syncedDay = syncedDay
         }
 
         /// The nutrients in the amount eaten.
@@ -53,6 +68,20 @@ extension SchemaV1 {
             let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(86_400)
             return #Predicate<FoodLogEntry> { entry in
                 entry.loggedAt >= start && entry.loggedAt < end
+            }
+        }
+
+        /// Matches entries that haven't been pushed to the server yet.
+        static var notSynced: Predicate<FoodLogEntry> {
+            #Predicate<FoodLogEntry> { entry in
+                entry.syncedDay == nil
+            }
+        }
+
+        /// Matches entries pushed to the server under `day`.
+        static func synced(onDay day: String) -> Predicate<FoodLogEntry> {
+            #Predicate<FoodLogEntry> { entry in
+                entry.syncedDay == day
             }
         }
 

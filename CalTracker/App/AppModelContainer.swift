@@ -10,7 +10,7 @@ enum AppModelContainer {
     /// In-memory containers skip the migration plan, which can make `save()` fail
     /// nondeterministically when there's no store on disk to migrate.
     static func make(inMemory: Bool = false) -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV1.self)
+        let schema = Schema(versionedSchema: SchemaV2.self)
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         do {
             return try ModelContainer(

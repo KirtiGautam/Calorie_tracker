@@ -42,6 +42,75 @@ struct TargetsStoreTests {
         #expect(TargetsStore(defaults: isolated.defaults).bodyProfile == nil)
     }
 
+    @Test func saveStampsAndPersistsUpdatedAt() throws {
+        let savedAt = Date(timeIntervalSince1970: 1_800_000_000.5)
+
+        try TargetsStore(defaults: isolated.defaults).save(targets: targets, bodyProfile: nil, goal: .cut, savedAt: savedAt)
+
+        #expect(TargetsStore(defaults: isolated.defaults).updatedAt == savedAt)
+    }
+
+    @Test func saveCallsOnChange() throws {
+        var changeCount = 0
+        let store = TargetsStore(defaults: isolated.defaults) { changeCount += 1 }
+
+        try store.save(targets: targets, bodyProfile: nil, goal: .cut)
+
+        #expect(changeCount == 1)
+    }
+
+    @Test func applyRemoteReplacesTargetsAndGoalButKeepsTheBodyProfile() throws {
+        var changeCount = 0
+        let store = TargetsStore(defaults: isolated.defaults) { changeCount += 1 }
+        try store.save(targets: targets, bodyProfile: body, goal: .cut)
+        let remote = DailyTargets(energy: 3_000, protein: 160)
+        let updatedAt = Date(timeIntervalSince1970: 1_900_000_000)
+
+        try store.applyRemote(targets: remote, goal: .bulk, updatedAt: updatedAt)
+
+        #expect(changeCount == 1)
+        let reopened = TargetsStore(defaults: isolated.defaults)
+        #expect(reopened.targets == remote)
+        #expect(reopened.goal == .bulk)
+        #expect(reopened.updatedAt == updatedAt)
+        #expect(reopened.bodyProfile == body)
+    }
+
+    @Test func freshStoreHasNoUpdatedAt() {
+        #expect(TargetsStore(defaults: isolated.defaults).updatedAt == nil)
+    }
+
+    @Test func aGoalSavedBeforeSaveTimesWereRecordedHasNoSaveTime() throws {
+        isolated.defaults.set(try JSONEncoder().encode(WeightGoal.cut), forKey: "targets.goal")
+
+        let store = TargetsStore(defaults: isolated.defaults)
+
+        #expect(store.goal == .cut)
+        #expect(store.updatedAt == nil)
+    }
+
+    @Test func recordSaveTimeStampsOnlyAGoalWithoutOne() throws {
+        isolated.defaults.set(try JSONEncoder().encode(WeightGoal.cut), forKey: "targets.goal")
+        var changeCount = 0
+        let store = TargetsStore(defaults: isolated.defaults) { changeCount += 1 }
+        let first = Date(timeIntervalSince1970: 1_800_000_000)
+
+        try store.recordSaveTime(first)
+        try store.recordSaveTime(first.addingTimeInterval(60))
+
+        #expect(store.updatedAt == first)
+        #expect(TargetsStore(defaults: isolated.defaults).updatedAt == first)
+        #expect(changeCount == 0)
+    }
+
+    @Test func recordSaveTimeWithoutAGoalDoesNothing() throws {
+        let store = TargetsStore(defaults: isolated.defaults)
+
+        try store.recordSaveTime(Date(timeIntervalSince1970: 1_800_000_000))
+
+        #expect(store.updatedAt == nil)
+    }
+
     @Test func unreadableDataIsTreatedAsNeverSaved() {
         isolated.defaults.set(Data("not json".utf8), forKey: "targets.daily")
 

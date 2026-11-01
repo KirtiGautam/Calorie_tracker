@@ -57,6 +57,61 @@ struct FoodLogStoreTests {
         #expect(Set(entries.map(\.loggedAt)) == [todayStart, lateToday])
     }
 
+    @Test func newEntriesHaveASyncIDAndAreNotSynced() throws {
+        let noon = try Date("2026-10-23T12:00:00Z", strategy: .iso8601)
+
+        try store.log(food, grams: 100, loggedAt: noon)
+        try store.log(food, grams: 50, loggedAt: noon)
+
+        let entries = try fetchEntries(onSameDayAs: noon)
+        #expect(Set(entries.compactMap(\.syncID)).count == 2)
+        #expect(entries.allSatisfy { $0.syncedDay == nil })
+    }
+
+    @Test func deletingASyncedEntryLeavesATombstone() throws {
+        let noon = try Date("2026-10-23T12:00:00Z", strategy: .iso8601)
+        try store.log(food, grams: 100, loggedAt: noon)
+        let entry = try #require(try fetchEntries(onSameDayAs: noon).first)
+        entry.syncedDay = "2026-10-23"
+        let syncID = try #require(entry.syncID)
+
+        try store.delete(entry)
+
+        let tombstones = try container.mainContext.fetch(FetchDescriptor<FoodLogDeletion>())
+        #expect(tombstones.map(\.syncID) == [syncID])
+        #expect(tombstones.map(\.day) == ["2026-10-23"])
+    }
+
+    @Test func deletingAnUnsyncedEntryLeavesNoTombstone() throws {
+        let noon = try Date("2026-10-23T12:00:00Z", strategy: .iso8601)
+        try store.log(food, grams: 100, loggedAt: noon)
+
+        try store.delete(try #require(try fetchEntries(onSameDayAs: noon).first))
+
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<FoodLogDeletion>()) == 0)
+    }
+
+    @Test func changesCallOnChange() throws {
+        let noon = try Date("2026-10-23T12:00:00Z", strategy: .iso8601)
+        var changeCount = 0
+        let store = FoodLogStore(modelContext: container.mainContext) { changeCount += 1 }
+
+        try store.log(food, grams: 100, loggedAt: noon)
+        try store.delete(try #require(try fetchEntries(onSameDayAs: noon).first))
+
+        #expect(changeCount == 2)
+    }
+
+    @Test func aRejectedAmountDoesNotCallOnChange() throws {
+        var changeCount = 0
+        let store = FoodLogStore(modelContext: container.mainContext) { changeCount += 1 }
+
+        #expect(throws: LogFoodError.invalidAmount) {
+            try store.log(food, grams: 0, loggedAt: .now)
+        }
+        #expect(changeCount == 0)
+    }
+
     @Test(arguments: [0.0, -10, Double.nan])
     func refusesInvalidAmounts(grams: Double) throws {
         let noon = try Date("2026-10-23T12:00:00Z", strategy: .iso8601)
