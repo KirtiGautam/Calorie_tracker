@@ -4,23 +4,33 @@ import Security
 /// Keeps the tokens in one Keychain item, readable after the first unlock and never synced or backed up off the device.
 ///
 /// Keychain items outlive the app, so reinstalling within the refresh token's lifetime signs straight back in.
-struct KeychainTokenStore: TokenStoring {
+/// It's an actor so the Keychain calls run off the main actor, one at a time.
+actor KeychainTokenStore: TokenStoring {
     /// The Keychain service the item is stored under.
     static let service = "com.kirti.Gramwise.account"
 
     /// The Keychain account the item is stored under.
     static let account = "session"
 
-    func load() -> GramwiseTokenPair? {
+    func load() throws -> GramwiseTokenPair? {
         var query = baseQuery
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
 
         var result: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else {
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        switch status {
+        case errSecSuccess:
+            // Data that doesn't decode can't sign in, and the next sign-in replaces it.
+            guard let data = result as? Data else { return nil }
+            return try? JSONDecoder().decode(GramwiseTokenPair.self, from: data)
+        case errSecItemNotFound:
             return nil
+        default:
+            // For example errSecInteractionNotAllowed before the first unlock after a restart. Reporting no tokens
+            // would sign out until the next launch, so the caller tries again later instead.
+            throw KeychainError(status: status)
         }
-        return try? JSONDecoder().decode(GramwiseTokenPair.self, from: data)
     }
 
     func save(_ tokens: GramwiseTokenPair) throws {

@@ -11,12 +11,36 @@ final class AccountSession {
     @ObservationIgnored private let api: any GramwiseAPI
     @ObservationIgnored private let tokenStore: any TokenStoring
 
-    /// Creates a session that talks to `api` and restores any tokens `tokenStore` kept.
+    /// Whether the tokens are known: read by `restore()`, or set by a sign-in or sign-out since launch.
+    @ObservationIgnored private var hasRestored = false
+
+    /// Counts changes to the tokens, so a store call that finishes after a newer change doesn't undo it.
+    @ObservationIgnored private var generation = 0
+
+    /// Creates a session that talks to `api` and keeps its tokens in `tokenStore`.
+    ///
+    /// It looks signed out until `restore()` reads the tokens a previous launch kept.
     init(api: any GramwiseAPI, tokenStore: any TokenStoring) {
         self.api = api
         self.tokenStore = tokenStore
-        tokens = tokenStore.load()
-        user = tokens?.user
+    }
+
+    /// Reads the tokens a previous launch kept, unless they're already known.
+    ///
+    /// When the store can't be read yet, for example before the first unlock after a restart, the session stays
+    /// signed out and the next call tries again.
+    func restore() async {
+        guard hasRestored == false else { return }
+        let started = generation
+        let saved: GramwiseTokenPair?
+        do {
+            saved = try await tokenStore.load()
+        } catch {
+            return
+        }
+        // A sign-in, sign-out or another restore that finished during the read wins.
+        guard hasRestored == false, generation == started else { return }
+        set(saved)
     }
 
     /// Whether an account is signed in.
@@ -26,19 +50,29 @@ final class AccountSession {
 
     /// Creates an account and signs in to it.
     func signUp(email: String, password: String) async throws {
-        try keep(try await api.signUp(email: email, password: password))
+        try await keep(try await api.signUp(email: email, password: password))
     }
 
     /// Signs in to an existing account.
     func signIn(email: String, password: String) async throws {
-        try keep(try await api.signIn(email: email, password: password))
+        try await keep(try await api.signIn(email: email, password: password))
     }
 
     /// Forgets the tokens. The log stays on the device.
-    func signOut() throws {
-        try tokenStore.clear()
-        tokens = nil
-        user = nil
+    ///
+    /// When the store can't remove them, the session stays signed in, so the next launch doesn't sign back in.
+    func signOut() async throws {
+        let previous = tokens
+        set(nil)
+        let signedOut = generation
+        do {
+            try await tokenStore.clear()
+        } catch {
+            if generation == signedOut {
+                set(previous)
+            }
+            throw error
+        }
     }
 
     /// Deletes the account and everything stored with it on the server, then signs out.
@@ -46,7 +80,7 @@ final class AccountSession {
         try await withAccessToken { [api] accessToken in
             try await api.deleteAccount(accessToken: accessToken)
         }
-        try signOut()
+        try await signOut()
     }
 
     /// Runs `operation` with the current access token, refreshing the tokens once if the server rejects it.
@@ -62,7 +96,7 @@ final class AccountSession {
             do {
                 return try await operation(renewed.accessToken)
             } catch GramwiseAPIError.invalidToken {
-                endExpiredSession()
+                await endExpiredSession()
                 throw GramwiseAPIError.sessionExpired
             }
         }
@@ -74,27 +108,44 @@ final class AccountSession {
         do {
             renewed = try await api.refresh(refreshToken: current.refreshToken)
         } catch GramwiseAPIError.invalidToken {
-            endExpiredSession()
+            await endExpiredSession()
             throw GramwiseAPIError.sessionExpired
         }
         // The person may have signed out, or into another account, while the refresh was in flight.
         guard tokens?.user.id == renewed.user.id else { throw GramwiseAPIError.sessionExpired }
-        try keep(renewed)
+        try await keep(renewed)
         return renewed
     }
 
-    private func keep(_ pair: GramwiseTokenPair) throws {
-        try tokenStore.save(pair)
-        tokens = pair
-        user = pair.user
+    /// Signs in with `pair` and saves it. When the store can't save it, the session goes back to how it was.
+    private func keep(_ pair: GramwiseTokenPair) async throws {
+        let previous = tokens
+        set(pair)
+        let signedIn = generation
+        do {
+            try await tokenStore.save(pair)
+        } catch {
+            if generation == signedIn {
+                set(previous)
+            }
+            throw error
+        }
     }
 
     /// Signs out after the server refused the tokens.
-    private func endExpiredSession() {
+    private func endExpiredSession() async {
+        set(nil)
         // The tokens are useless now. If the Keychain can't delete them, the next launch
         // refuses them again and lands here once more, so there's nothing better to do.
-        try? tokenStore.clear()
-        tokens = nil
-        user = nil
+        try? await tokenStore.clear()
+    }
+
+    /// Makes `pair` the session's tokens before the store call that saves or removes them, so a request that
+    /// finishes during that call sees the change.
+    private func set(_ pair: GramwiseTokenPair?) {
+        generation += 1
+        hasRestored = true
+        tokens = pair
+        user = pair?.user
     }
 }

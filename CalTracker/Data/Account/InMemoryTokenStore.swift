@@ -1,4 +1,7 @@
 /// Keeps tokens in memory only, for previews and tests, so they always start signed out.
+///
+/// `TokenStoring` is `Sendable`, so the main actor isolation that guards `tokens` has to be spelled out.
+@MainActor
 final class InMemoryTokenStore: TokenStoring {
     /// The saved tokens.
     private(set) var tokens: GramwiseTokenPair?
@@ -8,15 +11,15 @@ final class InMemoryTokenStore: TokenStoring {
         self.tokens = tokens
     }
 
-    func load() -> GramwiseTokenPair? {
+    @MainActor func load() async throws -> GramwiseTokenPair? {
         tokens
     }
 
-    func save(_ tokens: GramwiseTokenPair) throws {
+    @MainActor func save(_ tokens: GramwiseTokenPair) async throws {
         self.tokens = tokens
     }
 
-    func clear() throws {
+    @MainActor func clear() async throws {
         tokens = nil
     }
 }

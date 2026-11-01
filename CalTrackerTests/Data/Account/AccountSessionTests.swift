@@ -11,17 +11,80 @@ struct AccountSessionTests {
         user: GramwiseUser(id: UUID(uuidString: "148a1950-9ea0-4a7c-af35-126a8707de58") ?? UUID(), email: "ada@example.com")
     )
 
-    private func session(_ http: MockHTTPClient, store: InMemoryTokenStore) -> AccountSession {
+    private func session(_ http: MockHTTPClient, store: any TokenStoring) -> AccountSession {
         AccountSession(api: GramwiseClient(httpClient: http, configuration: configuration), tokenStore: store)
     }
 
-    @Test func restoresSavedTokens() {
-        let store = InMemoryTokenStore(tokens: oldTokens)
+    /// A session that has already restored `store`'s tokens.
+    private func restoredSession(_ http: MockHTTPClient, store: any TokenStoring) async -> AccountSession {
+        let account = session(http, store: store)
+        await account.restore()
+        return account
+    }
 
-        let account = session(MockHTTPClient(data: Data()), store: store)
+    @Test func restoresSavedTokens() async {
+        let account = session(MockHTTPClient(data: Data()), store: InMemoryTokenStore(tokens: oldTokens))
+        #expect(account.isSignedIn == false)
+
+        await account.restore()
 
         #expect(account.user == oldTokens.user)
         #expect(account.isSignedIn)
+    }
+
+    @Test func restoreTriesAgainAfterAFailedRead() async {
+        let store = FaultyTokenStore(tokens: oldTokens)
+        store.loadError = KeychainError(status: errSecInteractionNotAllowed)
+        let account = session(MockHTTPClient(data: Data()), store: store)
+
+        await account.restore()
+        #expect(account.isSignedIn == false)
+        store.loadError = nil
+        await account.restore()
+
+        #expect(account.user == oldTokens.user)
+    }
+
+    @Test func restoreDoesNotReplaceASignInSinceLaunch() async throws {
+        let store = InMemoryTokenStore()
+        let account = session(MockHTTPClient(data: try FixtureLoader.data(named: "gramwise_tokens")), store: store)
+        let otherTokens = GramwiseTokenPair(
+            accessToken: "other-access",
+            refreshToken: "other-refresh",
+            user: GramwiseUser(id: UUID(), email: "grace@example.com")
+        )
+
+        try await account.signIn(email: "ada@example.com", password: "correct horse")
+        try await store.save(otherTokens)
+        await account.restore()
+
+        #expect(account.user?.email == "ada@example.com")
+    }
+
+    @Test func aFailedSaveLeavesTheSessionSignedOut() async throws {
+        let store = FaultyTokenStore()
+        store.writeError = KeychainError(status: errSecNotAvailable)
+        let account = session(MockHTTPClient(data: try FixtureLoader.data(named: "gramwise_tokens"), statusCode: 201), store: store)
+
+        await #expect(throws: KeychainError(status: errSecNotAvailable)) {
+            try await account.signUp(email: "ada@example.com", password: "correct horse")
+        }
+
+        #expect(account.isSignedIn == false)
+        #expect(store.tokens == nil)
+    }
+
+    @Test func aFailedSignOutStaysSignedIn() async {
+        let store = FaultyTokenStore(tokens: oldTokens)
+        let account = await restoredSession(MockHTTPClient(data: Data()), store: store)
+        store.writeError = KeychainError(status: errSecNotAvailable)
+
+        await #expect(throws: KeychainError(status: errSecNotAvailable)) {
+            try await account.signOut()
+        }
+
+        #expect(account.user == oldTokens.user)
+        #expect(store.tokens == oldTokens)
     }
 
     @Test func signUpSavesTokens() async throws {
@@ -41,7 +104,7 @@ struct AccountSessionTests {
             .success((try FixtureLoader.data(named: "gramwise_tokens"), 200)),
             .success((MockHTTPClient.envelope(code: "goal_not_found"), 404)),
         ])
-        let account = session(http, store: store)
+        let account = await restoredSession(http, store: store)
         let api = GramwiseClient(httpClient: http, configuration: configuration)
 
         let goal = try await account.withAccessToken { try await api.goal(accessToken: $0) }
@@ -59,7 +122,7 @@ struct AccountSessionTests {
     @Test func aRejectedRefreshSignsOut() async throws {
         let store = InMemoryTokenStore(tokens: oldTokens)
         let http = MockHTTPClient(data: MockHTTPClient.envelope(code: "invalid_token"), statusCode: 401)
-        let account = session(http, store: store)
+        let account = await restoredSession(http, store: store)
         let api = GramwiseClient(httpClient: http, configuration: configuration)
 
         await #expect(throws: GramwiseAPIError.sessionExpired) {
@@ -78,7 +141,7 @@ struct AccountSessionTests {
             .success((try FixtureLoader.data(named: "gramwise_tokens"), 200)),
             .success((MockHTTPClient.envelope(code: "invalid_token"), 401)),
         ])
-        let account = session(http, store: store)
+        let account = await restoredSession(http, store: store)
         let api = GramwiseClient(httpClient: http, configuration: configuration)
 
         await #expect(throws: GramwiseAPIError.sessionExpired) {
@@ -95,7 +158,7 @@ struct AccountSessionTests {
             .success((MockHTTPClient.envelope(code: "invalid_token"), 401)),
             .failure(URLError(.notConnectedToInternet)),
         ])
-        let account = session(http, store: store)
+        let account = await restoredSession(http, store: store)
         let api = GramwiseClient(httpClient: http, configuration: configuration)
 
         await #expect(throws: URLError.self) {
@@ -114,11 +177,11 @@ struct AccountSessionTests {
         }
     }
 
-    @Test func signOutClearsTokens() throws {
+    @Test func signOutClearsTokens() async throws {
         let store = InMemoryTokenStore(tokens: oldTokens)
-        let account = session(MockHTTPClient(data: Data()), store: store)
+        let account = await restoredSession(MockHTTPClient(data: Data()), store: store)
 
-        try account.signOut()
+        try await account.signOut()
 
         #expect(account.user == nil)
         #expect(store.tokens == nil)
@@ -127,7 +190,7 @@ struct AccountSessionTests {
     @Test func deleteAccountSignsOut() async throws {
         let store = InMemoryTokenStore(tokens: oldTokens)
         let http = MockHTTPClient(data: Data(), statusCode: 204)
-        let account = session(http, store: store)
+        let account = await restoredSession(http, store: store)
 
         try await account.deleteAccount()
 
