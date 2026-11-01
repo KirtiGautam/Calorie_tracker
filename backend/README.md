@@ -44,8 +44,11 @@ Every schema change is a plain SQL file in `migrations/`, named `NNNN_slug.sql` 
 | `POST /auth/login` | `{email, password}` → `TokenPair`. 401 `invalid_credentials` for a wrong password or an unknown email. |
 | `POST /auth/refresh` | `{refresh_token}` → a new `TokenPair`. 401 `invalid_token`. |
 | `GET /me`, `DELETE /me` | The account `{id, email}`, or 204 after deleting it with its goal and logs. |
+| `GET /me/goal`, `PUT /me/goal` | The current daily targets and weight goal, the one with the latest `effective_from`. 404 `goal_not_found`. PUT saves the goal for its `effective_from` day: see below. 409 `goal_outdated`, 422 `invalid_goal_date`. |
 
 Every route except `/health` and `/auth/*` needs `Authorization: Bearer <access_token>`, and returns 401 `invalid_token` without a valid one. `TokenPair` is `{access_token, refresh_token, token_type, expires_in, user}`. Both tokens are HS256 JWTs signed with `JWT_SECRET`. Access tokens last 30 minutes and refresh tokens 60 days. Errors always use the envelope `{"error": {"code", "message", "details"}}`.
+
+A `user_goal` row holds the goal from its `effective_from` day (the day it was saved, on the device that saved it) until the next row's day, so changing the goal never changes what earlier days were measured against. A PUT for a later day than the current goal adds a row. One for the same day replaces that day's goal when its `updated_at` is newer, and resending the stored goal returns it unchanged. Anything older (an earlier day, or an earlier save the same day) returns 409 `goal_outdated`, because past days' goals can't change. `effective_from` must be `updated_at`'s day in some time zone (within a day of its UTC date), or the PUT returns 422 `invalid_goal_date`. `updated_at` is capped at the server's clock.
 
 ## Check
 
