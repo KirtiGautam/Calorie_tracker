@@ -294,7 +294,7 @@ struct SyncEngineTests {
         try device.store.log(banana, grams: 120, loggedAt: breakfast)
         await device.sync()
 
-        try device.account.signOut()
+        try await device.account.signOut()
         let bob = try await signUp("bob@example.com")
         try await device.account.signIn(email: "bob@example.com", password: "correct horse")
         await device.sync()

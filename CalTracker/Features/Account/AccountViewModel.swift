@@ -82,9 +82,9 @@ final class AccountViewModel {
     }
 
     /// Signs out. The log stays on the device.
-    func signOut() {
+    func signOut() async {
         do {
-            try account.signOut()
+            try await account.signOut()
             errorMessage = nil
             sync.requestSync()
         } catch {

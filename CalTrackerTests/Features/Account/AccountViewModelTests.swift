@@ -88,7 +88,7 @@ struct AccountViewModelTests {
         let (viewModel, device) = makeViewModel(tokens: tokens)
         try device.store.log(.fixture(), grams: 100, loggedAt: .now)
 
-        viewModel.signOut()
+        await viewModel.signOut()
         await device.sync()
 
         #expect(viewModel.signedInEmail == nil)
