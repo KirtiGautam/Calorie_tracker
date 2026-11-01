@@ -45,10 +45,14 @@ Every schema change is a plain SQL file in `migrations/`, named `NNNN_slug.sql` 
 | `POST /auth/refresh` | `{refresh_token}` → a new `TokenPair`. 401 `invalid_token`. |
 | `GET /me`, `DELETE /me` | The account `{id, email}`, or 204 after deleting it with its goal and logs. |
 | `GET /me/goal`, `PUT /me/goal` | The current daily targets and weight goal, the one with the latest `effective_from`. 404 `goal_not_found`. PUT saves the goal for its `effective_from` day: see below. 409 `goal_outdated`, 422 `invalid_goal_date`. |
+| `POST /daily-logs/changes` | `{added, removed}`, up to 500 each → the touched days. Merges by `entry_id`, so retries are harmless. |
+| `GET /daily-logs?cursor=&limit=` | `{days, next_cursor, has_more}`: days changed since `cursor`, oldest first, up to 100 per page. Request again with `next_cursor` while `has_more` is true, and store the last `next_cursor` to fetch only newer changes next time. |
 
 Every route except `/health` and `/auth/*` needs `Authorization: Bearer <access_token>`, and returns 401 `invalid_token` without a valid one. `TokenPair` is `{access_token, refresh_token, token_type, expires_in, user}`. Both tokens are HS256 JWTs signed with `JWT_SECRET`. Access tokens last 30 minutes and refresh tokens 60 days. Errors always use the envelope `{"error": {"code", "message", "details"}}`.
 
 A `user_goal` row holds the goal from its `effective_from` day (the day it was saved, on the device that saved it) until the next row's day, so changing the goal never changes what earlier days were measured against. A PUT for a later day than the current goal adds a row. One for the same day replaces that day's goal when its `updated_at` is newer, and resending the stored goal returns it unchanged. Anything older (an earlier day, or an earlier save the same day) returns 409 `goal_outdated`, because past days' goals can't change. `effective_from` must be `updated_at`'s day in some time zone (within a day of its UTC date), or the PUT returns 422 `invalid_goal_date`. `updated_at` is capped at the server's clock.
+
+A `daily_log` row holds one day's foods as a JSONB list. Each item carries `entry_id`, `food_id` (`usda-…` or `off-…`), `name`, `grams`, `logged_at` and the macros for the amount eaten (`energy_kcal`, `protein_g`, `carbs_g`, `fat_g`, `null` when unknown). The server recomputes the day's totals from them on every change. A day whose foods were all removed stays, with `foods: []`, so the removal reaches other devices.
 
 ## Check
 
