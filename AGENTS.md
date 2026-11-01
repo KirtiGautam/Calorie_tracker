@@ -1,13 +1,14 @@
 # AGENTS.md
 
-Guidance for AI coding agents working in this repository. Read [README.md](README.md) for what the app does and [SKILL.md](SKILL.md) for the full Swift, SwiftUI, SwiftData and testing guidelines. When this file and SKILL.md disagree, this file wins.
+Guidance for AI coding agents working in this repository. Read [README.md](README.md) for what the app does and [SKILL.md](SKILL.md) for the full Swift, SwiftUI, SwiftData and testing guidelines. When this file and SKILL.md disagree, this file wins. For anything under `backend/`, see [Backend](#backend).
 
 ## Project at a glance
 
 - **App:** Gramwise, a calorie and macro tracker. The Xcode project, targets and module are still named `CalTracker`, and the bundle ID is `com.kirti.Gramwise`. Don't rename them unless asked.
 - **Platforms:** iOS and iPadOS 27.0, iPhone and iPad (including iPhone Duo and resizable windows). Don't change the deployment target.
 - **Toolchain:** Xcode 27.1, Swift 6, `SWIFT_STRICT_CONCURRENCY = complete`, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, approachable concurrency on.
-- **Dependencies:** none. Don't add any third-party package without asking.
+- **Dependencies:** none in the app. Don't add any third-party package without asking.
+- **Backend:** `backend/` is a separate FastAPI service for accounts and sync. See [Backend](#backend).
 - **Project file:** the targets use file system synchronized groups, so new files under `CalTracker/`, `CalTrackerTests/` or `CalTrackerUITests/` are picked up automatically. Don't add file references to `project.pbxproj` by hand.
 
 ## Commands
@@ -73,10 +74,26 @@ If `iPhone Duo` isn't installed, pick another simulator from `xcrun simctl list 
 - Test view models directly. Don't test SwiftUI views.
 - UI tests reset state with launch arguments (for example `-targets.daily ""` clears saved targets).
 
+## Backend
+
+`backend/` is a FastAPI service on Supabase Postgres for accounts and sync, written in Python 3.14 and run entirely in Docker. The iOS rules above don't apply there. Read [backend/README.md](backend/README.md) for its setup, routes and rules, and [backend/SKILL.md](backend/SKILL.md) for the FastAPI coding guidelines. Where those two disagree, the README wins.
+
+Checks (run from `backend/` after every backend change; both need Docker running):
+
+```sh
+./scripts/lint.sh   # ruff check, ruff format --check, ty check
+./scripts/test.sh   # pytest with a 90% coverage gate; no network or database
+```
+
+- **Migrations:** every schema change is the next numbered SQL file in `backend/migrations/`, with the SQLModel models updated to match. Never edit a migration that has run, and enable row level security on every new table.
+- **API contract:** the app's client for this service is `CalTracker/Data/Gramwise/`, used by `Data/Account/` and `Data/Sync/`. When a route, field or error code changes, update both sides in the same change, plus the route table in `backend/README.md`. Installed app builds keep calling the old API, so add new fields as optional and don't rename or remove error codes.
+- **Dependencies:** they're locked in `backend/pyproject.toml` and `backend/uv.lock`. Ask before adding one, as for the app.
+
 ## Secrets
 
 - The USDA key comes from `USDA_API_KEY` in `Config/Base.xcconfig`, which defaults to `DEMO_KEY`. It can be overridden in `Config/Secrets.xcconfig`, which is gitignored, and reaches the app through `Info.plist` as `USDAAPIKey`.
 - Never commit `Config/Secrets.xcconfig` or write a real key into any tracked file.
+- The backend reads `DATABASE_URL` and `JWT_SECRET` from `backend/.env`, which is gitignored. Never commit it. `backend/.env.example` holds placeholders only.
 
 ## Git
 

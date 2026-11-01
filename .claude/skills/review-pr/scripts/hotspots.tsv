@@ -1,6 +1,6 @@
 # Hotspot patterns for hotspots.sh. Each hit is a lead to inspect, not a finding.
 # Columns, separated by tabs: path regex, added-line regex (POSIX ERE), label.
-# Swift lines whose first non-blank characters are // are skipped.
+# Comment lines are skipped: // in Swift, # in Python and TOML, -- in SQL.
 #
 # Concurrency
 \.swift$	DispatchQueue|DispatchGroup|DispatchSemaphore	GCD: use async/await, actors, or Mutex
@@ -90,3 +90,33 @@ project\.pbxproj$	PRODUCT_BUNDLE_IDENTIFIER|PRODUCT_NAME|SWIFT_DEFAULT_ACTOR_ISO
 # String catalog
 \.xcstrings$	"extractionState" : "(extracted|stale|migrated)"	catalog key not manual
 \.xcstrings$	%@|%lld|%d|%f	non-positional placeholder: use %1$@ and describe it in the comment
+# Backend: async and blocking
+^backend/.*\.py$	async def	async def: nothing blocking and no session inside (routes here are plain def)
+^backend/.*\.py$	(^|[^.A-Za-z_])(requests\.(get|post|put|patch|delete|head|request|Session)\(|time\.sleep\()	blocking call: fine in def, never in async def
+^backend/.*\.py$	(^|[^.A-Za-z_])print\(	print(): use logging
+# Backend: dependencies, errors and structure
+^backend/app/.*\.py$	=[ ]*(Depends|Query|Body|Header|Cookie|Form)\(	default-value dependency: use Annotated[...]
+^backend/app/.*/service\.py$	from fastapi|import fastapi	service imports fastapi: raise an AppError subclass instead
+^backend/app/.*\.py$	HTTPException\(	HTTPException: raise an AppError subclass so the error code stays stable
+^backend/.*\.py$	except( Exception)?[ ]*:	broad except: catch specific exceptions, re-raise in yield dependencies
+^backend/app/.*\.py$	create_all\(	create_all outside tests: schema changes go in migrations/
+^backend/app/.*\.py$	ORJSONResponse|class Config:|\.dict\(\)|@validator|json_encoders|on_event\(|from jose|passlib|root_path=	outdated API (backend/SKILL.md §18 and §19)
+^backend/app/.*\.py$	allow_origins=\[["']\*["']\]	CORS wildcard: list exact origins
+^backend/app/.*\.py$	noqa(:[ A-Z0-9,]+)?$	noqa without a reason after it
+# Backend: security, data and the API contract
+^backend/app/.*/router\.py$	@router\.(get|post|put|patch|delete)\(	route: CurrentUserDep, response_model, ErrorEnvelope responses, README table, app client
+^backend/app/.*/router\.py$	user_id[ ]*:	user id as a route parameter: take the acting user from CurrentUserDep
+^backend/app/.*\.py$	jwt\.decode\(	jwt.decode: pass algorithms=[...] and check the token type
+^backend/.*\.py$	log(ger)?\.(debug|info|warning|error|exception)\(.*(password|token|secret|database_url)	logging a secret?
+^backend/.*\.py$	datetime\.(utcnow\(|now\(\))	naive datetime: use datetime.now(UTC)
+^backend/app/.*/schemas\.py$	:[ ]*(str|list\[[^]]*\])([ ]*\|[ ]*None)?([ ]*=[ ]*None)?[ ]*$	unbounded str or list: add max_length if clients send it
+^backend/app/.*/schemas\.py$	^class [A-Za-z]+\(	schema change: does the app's Gramwise client still decode it?
+^backend/app/.*/models\.py$	table=True|Field\(|Column\(	model change: needs a matching migrations/NNNN_*.sql
+# Backend: migrations and dependencies
+^backend/migrations/.*\.sql$	CREATE TABLE	new table: ENABLE ROW LEVEL SECURITY, and a matching SQLModel model
+^backend/migrations/.*\.sql$	DROP |RENAME |ALTER COLUMN .* TYPE|SET NOT NULL	destructive change: existing rows and installed app builds still fine?
+^backend/pyproject\.toml$	^[ ]*"[A-Za-z0-9_.-]+(\[[^]]*\])?[<>=~!]	dependency added or changed: needs the owner's approval
+# Backend tests
+^backend/tests/.*\.py$	httpx\.(get|post|put|patch|delete|Client|AsyncClient)\(|requests\.(get|post|put|patch|delete|head|request|Session)\(|urlopen	possible live network in a test: use httpx.MockTransport
+^backend/tests/.*\.py$	dependency_overrides\[	override: cleared in teardown (the client fixture does this)?
+^backend/tests/.*\.py$	time\.sleep\(	timing-based wait in a test
