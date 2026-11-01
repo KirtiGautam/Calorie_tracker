@@ -45,8 +45,8 @@ Every schema change is a plain SQL file in `migrations/`, named `NNNN_slug.sql` 
 | `POST /auth/refresh` | `{refresh_token}` → a new `TokenPair`. 401 `invalid_token`. |
 | `GET /me`, `DELETE /me` | The account `{id, email}`, or 204 after deleting it with its goal and logs. |
 | `GET /me/goal`, `PUT /me/goal` | The current daily targets and weight goal, the one with the latest `effective_from`. 404 `goal_not_found`. PUT saves the goal for its `effective_from` day: see below. 409 `goal_outdated`, 422 `invalid_goal_date`. |
-| `POST /daily-logs/changes` | `{added, removed}`, up to 500 each → the touched days. Merges by `entry_id`, so retries are harmless. |
-| `GET /daily-logs?cursor=&limit=` | `{days, next_cursor, has_more}`: days changed since `cursor`, oldest first, up to 100 per page. Request again with `next_cursor` while `has_more` is true, and store the last `next_cursor` to fetch only newer changes next time. |
+| `POST /daily-logs/changes` | `{added, removed}`, up to 500 each → the touched days. Merges by `entry_id`, so retries are harmless. 422 `too_many_foods` when a day would hold more than 200 foods after the merge, counting every device's foods, and then nothing in the request is saved. |
+| `GET /daily-logs?cursor=&limit=` | `{days, next_cursor, has_more}`: days changed since `cursor`, oldest first, up to 100 per page. Request again with `next_cursor` while `has_more` is true, and store the last `next_cursor` to fetch only newer changes next time. 422 `invalid_cursor` for a cursor this server didn't hand out: drop it and pull again from the start. |
 
 Every route except `/health` and `/auth/*` needs `Authorization: Bearer <access_token>`, and returns 401 `invalid_token` without a valid one. `TokenPair` is `{access_token, refresh_token, token_type, expires_in, user}`. Both tokens are HS256 JWTs signed with `JWT_SECRET`. Access tokens last 30 minutes and refresh tokens 60 days. Errors always use the envelope `{"error": {"code", "message", "details"}}`.
 
