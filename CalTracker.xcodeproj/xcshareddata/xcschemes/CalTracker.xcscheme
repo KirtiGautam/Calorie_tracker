@@ -64,7 +64,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = ""
+            argument = "-seedSampleLog"
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>

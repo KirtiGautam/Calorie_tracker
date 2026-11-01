@@ -6,10 +6,14 @@ enum TodaySheet: Identifiable {
     /// Edit the goal and daily targets.
     case targets
 
+    /// Create an account, sign in, or manage the account and sync.
+    case account
+
     var id: String {
         switch self {
         case .logFood(let food): "logFood-\(food.id)"
         case .targets: "targets"
+        case .account: "account"
         }
     }
 }
