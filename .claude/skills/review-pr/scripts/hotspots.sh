@@ -29,6 +29,9 @@ awk -F'\t' '
         if (file ~ /(^|\/)Config\/Secrets\.xcconfig$/) {
             print file ":1 [CRITICAL: gitignored secrets file is in the diff]"
         }
+        if (file ~ /(^|\/)\.env(\.[A-Za-z0-9_-]+)?$/ && file !~ /\.(example|sample|template)$/) {
+            print file ":1 [CRITICAL: .env secrets file is in the diff]"
+        }
         next
     }
 
@@ -50,6 +53,8 @@ awk -F'\t' '
         trimmed = code
         sub(/^[ \t]+/, "", trimmed)
         if (file ~ /\.swift$/ && trimmed ~ /^\/\//) { line++; next }
+        if (file ~ /\.(py|toml)$/ && trimmed ~ /^#/) { line++; next }
+        if (file ~ /\.sql$/ && trimmed ~ /^--/) { line++; next }
         for (i = 1; i <= count; i++) {
             if (file ~ path_pattern[i] && code ~ line_pattern[i]) {
                 shown = trimmed

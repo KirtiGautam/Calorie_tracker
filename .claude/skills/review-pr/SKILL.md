@@ -1,23 +1,23 @@
 ---
 name: review-pr
-description: Reviews a Gramwise (CalTracker) pull request, branch, or local diff against the project's AGENTS.md rules and the Swift, SwiftUI, SwiftData, concurrency, testing, accessibility and security guidelines distilled from twostraws/swift-agent-skills. Use when asked to review a PR, review changes before merge, check a branch, or answer "is this ready to merge?".
+description: Reviews a Gramwise (CalTracker) pull request, branch, or local diff. iOS app changes are checked against the project's AGENTS.md rules and the Swift, SwiftUI, SwiftData, concurrency, testing, accessibility and security guidelines distilled from twostraws/swift-agent-skills. FastAPI backend changes in backend/ are checked against backend/README.md and the backend/SKILL.md guidelines, including migrations and the API contract with the app. Use when asked to review a PR, review changes before merge, check a branch, or answer "is this ready to merge?".
 argument-hint: "[PR number | PR URL | branch | blank for current changes] [--no-build]"
 ---
 
 # Review a pull request
 
-Review a change to this repository the way a careful senior iOS reviewer would. Find real problems in the diff, prove each one by reading the code, rank them, and give a clear merge verdict. This is a read-only review. Don't fix anything unless the user asks you to afterwards.
+Review a change to this repository the way a careful senior iOS and Python backend reviewer would. Find real problems in the diff, prove each one by reading the code, rank them, and give a clear merge verdict. This is a read-only review. Don't fix anything unless the user asks you to afterwards.
 
 ## Ground rules
 
 1. **Read-only.** Don't edit files, stage, commit, push, check out branches in the user's working copy, or post to GitHub. Posting needs an explicit request (see Step 7).
 2. **Report only genuine problems.** Don't nitpick or invent issues. It's better to miss a nit than to bury a real bug in noise. Never pad a clean review.
 3. **Review the diff, not the whole codebase.** Read whole files for context, but only report problems the PR introduces or makes worse. A severe existing problem the PR touches can go under "Outside this PR", in one line.
-4. **Project rules win.** `AGENTS.md` (also `CLAUDE.md`) overrides generic guidance. The repo-root `SKILL.md` has the long-form Swift and SwiftUI guidance. Use it to settle detail questions.
+4. **Project rules win.** `AGENTS.md` (also `CLAUDE.md`) overrides generic guidance. The repo-root `SKILL.md` has the long-form Swift and SwiftUI guidance. Use it to settle detail questions. For `backend/`, `backend/README.md` holds the project rules and `backend/SKILL.md` the long-form FastAPI guidance. Where those two disagree, the README wins.
 5. **Compiling is not proof.** SwiftData predicates, continuations, actor reentrancy and some concurrency patterns build cleanly and then fail at runtime. Read the logic.
 6. **Verify every finding** by reopening the cited lines in the PR's version of the file. If you can't confirm a claim from the code, drop it or turn it into a question.
 7. **Group by root cause.** One missing migration stage that breaks three call sites is one finding listing three locations.
-8. **Know the baseline:** iOS/iPadOS 27.0 only, Xcode 27.1, Swift 6, strict concurrency `complete`, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, approachable concurrency on, no third-party packages. A missing `@MainActor` is therefore not a finding. Code that should run off the main actor (`Domain/`, mappers, DTOs) must say `nonisolated`.
+8. **Know the baseline:** iOS/iPadOS 27.0 only, Xcode 27.1, Swift 6, strict concurrency `complete`, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, approachable concurrency on, no third-party packages. A missing `@MainActor` is therefore not a finding. Code that should run off the main actor (`Domain/`, mappers, DTOs) must say `nonisolated`. The backend baseline is in `references/backend.md`: Python 3.14, FastAPI 0.162, sync SQLModel on Supabase Postgres, so routes are plain `def`.
 
 ## Step 1: Resolve the scope
 
@@ -30,7 +30,7 @@ Parse `$ARGUMENTS`:
 | Blank, on a feature branch | `git diff master...HEAD` plus any uncommitted work from `git diff HEAD` |
 | Blank, on `master` | `git diff HEAD` (staged and unstaged). If it's empty, say there's nothing to review and stop. |
 
-`--no-build` skips Step 3b. Also skip it when the diff touches no Swift, project, plist, xcconfig or string catalog files.
+`--no-build` skips Steps 3b and 3c. Also skip 3b when the diff touches no Swift, project, plist, xcconfig or string catalog files, and skip 3c when it touches nothing under `backend/` except Markdown.
 
 For a PR, note `baseRefName`. If it isn't `master`, diff against that base.
 
@@ -40,7 +40,7 @@ Before judging the code, write down for yourself:
 
 1. **What should change.** Take this from the PR title, body and commit messages.
 2. **What must not change.** Think about adjacent behavior, saved user data, other screens, and the other food source.
-3. **Constraints.** These include schema compatibility with existing installs, the iPhone Duo and iPad window sizes, and the offline and one-source-failing paths.
+3. **Constraints.** These include schema compatibility with existing installs, the iPhone Duo and iPad window sizes, and the offline and one-source-failing paths. For the backend, they include migrations that have already run in production, installed app builds that still call the old API, and sync retries from several devices.
 
 If the intent isn't stated, infer it from the diff and say in the report that you inferred it.
 
@@ -55,6 +55,8 @@ Then pick the reference checklists to load. Always load `project-rules.md`, then
 | `Data/Persistence/**`, `@Model`, `#Predicate`, `ModelContext`, `@Query`, `FetchDescriptor` | `references/swiftdata.md` |
 | `CalTrackerTests/**`, `CalTrackerUITests/**`, or new logic that ought to have tests | `references/testing.md` |
 | `Config/**`, `Info.plist`, `project.pbxproj`, networking, `UserDefaults`, logging, user input, decoding remote JSON | `references/security.md` |
+| anything under `backend/` other than Markdown | `references/backend.md`, plus `backend/README.md` and the `backend/SKILL.md` sections it names |
+| `CalTracker/Data/Gramwise/**`, `Data/Account/**` or `Data/Sync/**` | `references/backend.md` ("API contract with the app"), to check the app against the backend |
 
 The reference files live next to this file, in `.claude/skills/review-pr/references/`.
 
@@ -69,7 +71,7 @@ git diff -U0 --no-color <range> | bash .claude/skills/review-pr/scripts/hotspots
 # For a PR: gh pr diff <n> --patch | ... works too, but -U0 output gives exact line numbers.
 ```
 
-A hit is a **lead, not a finding**. Open each one and decide. Many will be fine in context. For example, a literal `Text("…")` can be fine inside `#Preview`.
+A hit is a **lead, not a finding**. Open each one and decide. Many will be fine in context. For example, a literal `Text("…")` can be fine inside `#Preview`. The scanner covers the backend too: Python files, migrations and `pyproject.toml`.
 
 ### 3b. Build and unit tests (unless skipped)
 
@@ -95,16 +97,32 @@ For the current branch, run the same commands in the repo, without the worktree.
 - `Config/Secrets.xcconfig` is gitignored and included with `#include?`, so the worktree builds with `DEMO_KEY`. That's expected.
 - Keep only warnings in files the PR changed, plus any new warnings it causes elsewhere. A build or test failure is a finding on its own (see Step 5).
 - Don't run the UI tests unless asked. They're slow and hit the live USDA and Open Food Facts APIs.
-- When you're done, run `git worktree remove --force <scratchpad>/review-<n>`.
+- When you're done, run `git worktree remove --force <scratchpad>/review-<n>`, after 3c if it runs there too.
+
+### 3c. Backend lint and tests (unless skipped)
+
+Run the backend's checks from `backend/`, in the same worktree as 3b for a PR or another branch, or in the repo for the current branch:
+
+```sh
+docker info >/dev/null && cd backend
+./scripts/lint.sh   # ruff check, ruff format --check, ty check
+./scripts/test.sh   # pytest with a 90% coverage gate; no network or database
+```
+
+- Both run inside the compose `dev` container and need Docker running. If `docker info` fails, skip 3c and say so under "Not checked". Don't count that as a failure.
+- The first run builds the dev image, so give each command a long timeout (up to 10 minutes).
+- They need no `.env`, so the worktree runs them as is.
+- Keep only lint errors in files the PR changed. Failing tests, or coverage below 90%, are findings on their own (see Step 5). Note the test count and the total coverage for the report.
 
 ## Step 4: Review
 
 Read every changed file **in full** at the PR's version, plus the direct callers and callees of anything whose signature or behavior changed. Then make these passes:
 
-1. **Intent and regressions.** Does the diff do what it claims and nothing else? Check edge cases: zero, one and many items; an empty or whitespace query; offline; one source failing while the other succeeds; very long food names; huge or zero serving sizes; a day boundary or time zone change. Check that every caller, test double (`SpyFoodLogging`, `StubFoodSearchProvider`, `MockHTTPClient`) and `AppDependencies` factory was updated with the protocol or initializer it depends on.
+1. **Intent and regressions.** Does the diff do what it claims and nothing else? Check edge cases: zero, one and many items; an empty or whitespace query; offline; one source failing while the other succeeds; very long food names; huge or zero serving sizes; a day boundary or time zone change. Check that every caller, test double (`SpyFoodLogging`, `StubFoodSearchProvider`, `MockHTTPClient`) and `AppDependencies` factory was updated with the protocol or initializer it depends on. For the backend, check: no token, an expired token, and another account's data; the same sync request sent twice; an empty page, exactly `limit` rows, and the last page; input at and past each bound; a day boundary or time zone change around `effective_from`; and a deleted account's goal and logs.
 2. **Domain checklists.** Work through each reference file loaded in Step 2. Apply only the rules the diff actually touches.
-3. **Tests.** New logic in `Domain/`, `Data/` or a view model needs Swift Testing coverage that follows `references/testing.md`. A bug fix needs a test that fails without the fix. Missing tests for a risky change is a real finding.
-4. **Security and privacy.** Check secrets, logging, untrusted remote data, and anything stored on device.
+3. **API contract.** When the diff changes a backend route, field or error code, open the matching types in `CalTracker/Data/Gramwise/` and the route table in `backend/README.md`. When it changes the app's Gramwise client, open the backend schemas and routers it calls. Both sides must agree, and installed app builds must keep working (see `references/backend.md`).
+4. **Tests.** New logic in `Domain/`, `Data/` or a view model needs Swift Testing coverage that follows `references/testing.md`. New backend logic needs pytest coverage that follows `references/backend.md`, including its error paths. A bug fix needs a test that fails without the fix. Missing tests for a risky change is a real finding.
+5. **Security and privacy.** Check secrets, logging, untrusted remote data, and anything stored on device. On the backend, also check authentication, ownership and input bounds.
 
 ## Step 5: Verify and rate
 
@@ -112,9 +130,9 @@ For each candidate finding, reopen the lines and confirm that the code really do
 
 | Severity | Meaning in this project |
 |---|---|
-| **Critical** | Crash, lost or corrupted food logs or targets, a committed secret, build broken, unit tests failing. |
-| **High** | A bug users will hit. An error from a user action swallowed or only printed. A SwiftData schema change without a migration stage. A data race or strict-concurrency warning. Live network in unit tests. A broken `AGENTS.md` "don't": new dependency, deployment target change, hand-edited `project.pbxproj` file references, rename of targets or bundle ID. |
-| **Medium** | An accessibility gap, a user-facing string not in the catalog, missing tests for new logic, deprecated or soft-deprecated API, work in a hot path (`body`, row views), or a convention break with real maintenance cost. |
+| **Critical** | Crash, lost or corrupted food logs or targets (on device or on the server), a committed secret or `backend/.env`, build broken, unit tests failing. On the backend: an edited migration that has already run, lint failing, or coverage below 90%. |
+| **High** | A bug users will hit. An error from a user action swallowed or only printed. A SwiftData schema change without a migration stage. A data race or strict-concurrency warning. Live network in unit tests. A broken `AGENTS.md` "don't": new dependency, deployment target change, hand-edited `project.pbxproj` file references, rename of targets or bundle ID. On the backend: a blocking call in `async def`, a route without `CurrentUserDep` or a missing ownership check, a model and migration that don't match, a new table without RLS, an unbounded input or list, an error outside the envelope, an API change that breaks installed app builds, a sync change that makes retries unsafe, or a new dependency. |
+| **Medium** | An accessibility gap, a user-facing string not in the catalog, missing tests for new logic, deprecated or soft-deprecated API, work in a hot path (`body`, row views), or a convention break with real maintenance cost. On the backend: a stale route table in `backend/README.md`, a service that imports `fastapi`, or a `# noqa` with no reason. |
 | **Low** | Naming, a small modernization, doc comment wording. Report at most five, and none if the review is already long. |
 
 **Verdict.** Any Critical or High finding means **Request changes**. Only Medium or Low findings means **Approve with comments**. No findings means **Approve**.
@@ -128,6 +146,7 @@ Use this shape. Keep it tight: findings first, no preamble, no restating the dif
 
 **Scope:** <PR #n / branch / local changes>, <files> files, +<adds> −<dels>. **Intent:** <one sentence, and "(inferred)" if it was>.
 **Build:** <clean | n new warnings | failed | skipped (reason)>. **Unit tests:** <passed (count) | n failed | skipped>.
+**Backend:** lint <clean | n errors | skipped (reason)>, tests <passed (count, coverage %) | n failed | skipped (reason)>. Leave this line out when the diff doesn't touch `backend/`.
 
 ### Findings
 
@@ -175,7 +194,7 @@ If the user asks to post the review:
 
 ## Large PRs
 
-If a PR changes more than about 1,000 lines or spans more than four areas, review it area by area and say so in the report. Don't spawn subagents on your own. You can offer a parallel review, split into intent and regressions, SwiftUI with accessibility and localization, concurrency with SwiftData, and tests with security. Start it only if the user agrees, and verify and merge their findings yourself before reporting.
+If a PR changes more than about 1,000 lines or spans more than four areas, review it area by area and say so in the report. Don't spawn subagents on your own. You can offer a parallel review, split into intent and regressions, SwiftUI with accessibility and localization, concurrency with SwiftData, tests with security, and the backend with the API contract. Start it only if the user agrees, and verify and merge their findings yourself before reporting.
 
 ## Credits
 
@@ -192,3 +211,5 @@ The checklists are an original synthesis, written for this project, of MIT-licen
 - Swift Security Expert by Ivan Magda
 - Swift Architecture by Lasha Efremidze
 - Writing for Interfaces by Andrew Gleave
+
+The backend checklist (`references/backend.md`) is drawn from `backend/README.md` and `backend/SKILL.md`, which lists its own sources.
