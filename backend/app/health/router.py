@@ -3,7 +3,7 @@ from sqlalchemy import exc as sa_exc
 from sqlalchemy import text
 
 from app.database import SessionDep
-from app.exceptions import ErrorEnvelope
+from app.exceptions import error_responses
 from app.health.exceptions import DatabaseUnavailable
 from app.health.schemas import HealthStatus
 
@@ -19,7 +19,7 @@ async def liveness() -> HealthStatus:
 @router.get(
     "/ready",
     summary="Readiness check",
-    responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ErrorEnvelope}},
+    responses=error_responses(status.HTTP_503_SERVICE_UNAVAILABLE),
 )
 def readiness(session: SessionDep) -> HealthStatus:
     """Returns 200 when the database answers a trivial query, otherwise 503."""

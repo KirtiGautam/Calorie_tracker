@@ -1,15 +1,17 @@
 # syntax=docker/dockerfile:1
 ARG PYTHON_VERSION=3.14
 
-# ---- builder: resolve and install dependencies into /app/.venv ----
-FROM python:${PYTHON_VERSION}-slim AS builder
+# ---- uv-base: the interpreter plus uv, shared by the builder and dev stages ----
+FROM python:${PYTHON_VERSION}-slim AS uv-base
 COPY --from=ghcr.io/astral-sh/uv:0.11.29 /uv /bin/uv
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=0 \
-    UV_NO_DEV=1
+    UV_PYTHON_DOWNLOADS=0
 WORKDIR /app
+
+# ---- builder: resolve and install dependencies into /app/.venv ----
+FROM uv-base AS builder
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
@@ -20,19 +22,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # The source isn't copied in: compose bind-mounts the backend folder at /app, so edits
 # show up without a rebuild. The venv lives in /opt/venv so the mount can't hide it.
 # Rebuild only when pyproject.toml or uv.lock change.
-FROM python:${PYTHON_VERSION}-slim AS dev
-COPY --from=ghcr.io/astral-sh/uv:0.11.29 /uv /bin/uv
+FROM uv-base AS dev
 
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=0 \
-    UV_PROJECT_ENVIRONMENT=/opt/venv \
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
     UV_NO_SYNC=1 \
     VIRTUAL_ENV=/opt/venv \
     PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     GRAMWISE_IN_DOCKER=1
-WORKDIR /app
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \

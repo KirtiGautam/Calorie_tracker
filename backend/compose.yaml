@@ -10,16 +10,20 @@ x-hardening: &hardening
   cap_drop:
     - ALL
 
+# The production image, which the migrate and api services share.
+x-runtime: &runtime
+  <<: *hardening
+  build:
+    context: .
+    target: runtime
+  image: gramwise-backend
+  env_file: .env
+
 services:
   # One-shot release step: runs the pending SQL files in migrations/ and exits.
   # It runs once, before the API, never inside the API's workers.
   migrate:
-    <<: *hardening
-    build:
-      context: .
-      target: runtime
-    image: gramwise-backend
-    env_file: .env
+    <<: *runtime
     command: ["python", "migrations/migrate.py"]
     # The image's HEALTHCHECK probes the API, which this container doesn't run.
     healthcheck:
@@ -27,12 +31,7 @@ services:
     restart: "no"
 
   api:
-    <<: *hardening
-    build:
-      context: .
-      target: runtime
-    image: gramwise-backend
-    env_file: .env
+    <<: *runtime
     ports:
       - "8000:8000"
     depends_on:
@@ -51,3 +50,15 @@ services:
     volumes:
       - .:/app
     profiles: ["dev"]
+
+  # One-time setup outside the app's schema (extensions, roles, grants). Only runs on demand:
+  # ./scripts/bootstrap_db.sh pipes db/bootstrap.sql into psql here, so .env is read the same
+  # way as for the other services.
+  bootstrap:
+    image: postgres:17-alpine
+    env_file: .env
+    entrypoint:
+      - sh
+      - -c
+      - ': "$${DATABASE_URL:?is not set. Copy .env.example to .env and fill it in.}"; exec psql "$$DATABASE_URL" --no-psqlrc --set ON_ERROR_STOP=1 --file -'
+    profiles: ["tools"]

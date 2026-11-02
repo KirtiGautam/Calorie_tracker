@@ -1,13 +1,11 @@
+import uuid
+
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.users.exceptions import EmailTaken
 from app.users.models import AppUser
-
-
-def normalize_email(email: str) -> str:
-    """Trims and lowercases `email`, so lookups and the unique constraint ignore case."""
-    return email.strip().lower()
+from app.users.schemas import normalize_email
 
 
 def get_by_email(session: Session, email: str) -> AppUser | None:
@@ -32,6 +30,13 @@ def create(session: Session, email: str, hashed_password: str) -> AppUser:
         raise EmailTaken("An account with this email already exists") from exc
     session.refresh(user)
     return user
+
+
+def lock_account(session: Session, user_id: uuid.UUID) -> None:
+    """Locks the account's row until the transaction ends, so one person's writes run one at a time."""
+    session.exec(
+        select(AppUser.id).where(AppUser.id == user_id).with_for_update()
+    ).one()
 
 
 def delete(session: Session, user: AppUser) -> None:
