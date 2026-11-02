@@ -67,12 +67,9 @@ struct DayNavigationHeader: View {
             .foregroundStyle(Color.primary)
     }
 
-    @ViewBuilder
     private func arrow(_ title: LocalizedStringResource, systemImage: String, to destination: Date?) -> some View {
-        let button = Button(title, systemImage: systemImage) {
-            if let destination {
-                onSelectDay(destination)
-            }
+        Button(title, systemImage: systemImage) {
+            select(destination)
         }
         .labelStyle(.iconOnly)
         .font(.subheadline)
@@ -80,12 +77,15 @@ struct DayNavigationHeader: View {
         .foregroundStyle(.secondary)
         .frame(minWidth: 44, minHeight: 44)
         .contentShape(.rect)
+        // Hidden rather than removed, so it still takes up its share of the row and keeps its identity.
+        .opacity(destination == nil ? 0 : 1)
+        .disabled(destination == nil)
+        .accessibilityHidden(destination == nil)
+    }
 
-        if destination == nil {
-            // Hidden rather than removed, so it still takes up its share of the row.
-            button.hidden()
-        } else {
-            button
+    private func select(_ destination: Date?) {
+        if let destination {
+            onSelectDay(destination)
         }
     }
 }

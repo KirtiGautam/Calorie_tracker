@@ -39,12 +39,12 @@ struct SyncStatusButton: View {
                     if reduceMotion {
                         // A still symbol instead of a spinning one.
                         Image(systemName: "ellipsis")
-                            .font(.caption2.bold())
+                            .font(.caption.bold())
                             .foregroundStyle(.background)
                     } else {
                         ProgressView()
                             .controlSize(.mini)
-                            .tint(Color(uiColor: .systemBackground))
+                            .tint(Color(.systemBackground))
                     }
                 }
         case .upToDate:
@@ -55,7 +55,7 @@ struct SyncStatusButton: View {
                 .foregroundStyle(.orange)
                 .overlay(alignment: .bottomTrailing) {
                     Image(systemName: "exclamationmark.circle.fill")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundStyle(.white, .orange)
                         .offset(x: 4, y: 4)
                 }
