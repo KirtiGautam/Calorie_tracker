@@ -140,7 +140,7 @@ enum SampleLogSeeder {
         _ fat: Double
     ) -> FoodItem {
         FoodItem(
-            id: "usda-\(fdcID)",
+            id: FoodSource.usda.foodID(code: String(fdcID)),
             name: name,
             brand: nil,
             source: .usda,

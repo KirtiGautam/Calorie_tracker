@@ -32,23 +32,10 @@ nonisolated struct USDAClient: FoodSearchProvider {
     /// USDA's servers intermittently reject parentheses in the URL (even percent-encoded) with
     /// HTTP 400, and `Survey (FNDDS)` always contains them.
     func makeRequest(query: String) throws -> URLRequest {
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = "api.nal.usda.gov"
-        components.path = "/fdc/v1/foods/search"
-        components.setStrictlyEncodedQueryItems([
-            URLQueryItem(name: "api_key", value: configuration.apiKey),
-        ])
-
-        guard let url = components.url else { throw APIError.invalidURL }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.httpBody = try JSONEncoder().encode(
-            SearchCriteria(query: query, dataType: Self.dataTypes, pageSize: Self.pageSize)
+        try makePOSTRequest(
+            path: "/fdc/v1/foods/search",
+            body: SearchCriteria(query: query, dataType: Self.dataTypes, pageSize: Self.pageSize)
         )
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        return request
     }
 
     /// Returns the foods with the given FoodData Central IDs, at most `maxFoodsPerRequest` of them.
@@ -62,10 +49,18 @@ nonisolated struct USDAClient: FoodSearchProvider {
 
     /// Builds a `foods` request for up to `maxFoodsPerRequest` IDs, in the abridged format.
     func makeFoodsRequest(fdcIDs: [Int]) throws -> URLRequest {
+        try makePOSTRequest(
+            path: "/fdc/v1/foods",
+            body: FoodsCriteria(fdcIds: Array(fdcIDs.prefix(Self.maxFoodsPerRequest)), format: "abridged")
+        )
+    }
+
+    /// Builds a POST request for `path` with `body` as JSON and the API key in the query string.
+    private func makePOSTRequest(path: String, body: some Encodable) throws -> URLRequest {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "api.nal.usda.gov"
-        components.path = "/fdc/v1/foods"
+        components.path = path
         components.setStrictlyEncodedQueryItems([
             URLQueryItem(name: "api_key", value: configuration.apiKey),
         ])
@@ -73,29 +68,10 @@ nonisolated struct USDAClient: FoodSearchProvider {
         guard let url = components.url else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.httpBody = try JSONEncoder().encode(
-            FoodsCriteria(fdcIds: Array(fdcIDs.prefix(Self.maxFoodsPerRequest)), format: "abridged")
-        )
+        request.httpBody = try JSONEncoder().encode(body)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         return request
-    }
-
-    /// The JSON body of a `foods` POST request.
-    private struct FoodsCriteria: Encodable {
-        let fdcIds: [Int]
-        let format: String
-    }
-
-    /// Decodes and maps a `foods` response off the caller's actor.
-    @concurrent
-    static func parseFoods(_ data: Data) async throws -> [FoodItem] {
-        do {
-            let foods = try JSONDecoder().decode([USDAFoodDetail].self, from: data)
-            return foods.compactMap { USDAMapper.foodItem(from: $0.searchFood) }
-        } catch is DecodingError {
-            throw APIError.decoding
-        }
     }
 
     /// The JSON body of a `foods/search` POST request.
@@ -105,14 +81,25 @@ nonisolated struct USDAClient: FoodSearchProvider {
         let pageSize: Int
     }
 
+    /// The JSON body of a `foods` POST request.
+    private struct FoodsCriteria: Encodable {
+        let fdcIds: [Int]
+        let format: String
+    }
+
     /// Decodes and maps a search response off the caller's actor, since responses can be large.
     @concurrent
     static func parse(_ data: Data) async throws -> [FoodItem] {
-        do {
-            let response = try JSONDecoder().decode(USDASearchResponse.self, from: data)
-            return USDAMapper.foodItems(from: response)
-        } catch is DecodingError {
-            throw APIError.decoding
-        }
+        let response = try JSONDecoder().decodeResponse(USDASearchResponse.self, from: data)
+        return USDAMapper.foodItems(from: response)
+    }
+
+    /// Decodes and maps a `foods` response off the caller's actor.
+    ///
+    /// The abridged foods have the same shape as search results, apart from the nutrient field names that
+    /// `USDASearchResponse.FoodNutrient` also accepts.
+    @concurrent
+    static func parseFoods(_ data: Data) async throws -> [FoodItem] {
+        try JSONDecoder().decodeResponse([USDASearchResponse.Food].self, from: data).compactMap(USDAMapper.foodItem(from:))
     }
 }

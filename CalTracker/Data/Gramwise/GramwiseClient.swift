@@ -137,10 +137,6 @@ nonisolated struct GramwiseClient: GramwiseAPI {
     /// Decodes a response off the caller's actor, since a page of days can be large.
     @concurrent
     static func decode<Response: Decodable & Sendable>(_ type: Response.Type, from data: Data) async throws -> Response {
-        do {
-            return try GramwiseJSON.makeDecoder().decode(type, from: data)
-        } catch is DecodingError {
-            throw APIError.decoding
-        }
+        try GramwiseJSON.makeDecoder().decodeResponse(type, from: data)
     }
 }

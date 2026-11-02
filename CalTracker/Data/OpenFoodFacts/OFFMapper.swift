@@ -2,9 +2,6 @@ import Foundation
 
 /// Converts Open Food Facts DTOs into `FoodItem`s.
 nonisolated enum OFFMapper {
-    /// Kilojoules per kilocalorie, used when a product only reports energy in kJ.
-    static let kilojoulesPerKilocalorie = 4.184
-
     /// Returns the usable foods in `response`, dropping products without a name or a plausible energy value.
     static func foodItems(from response: OFFSearchResponse) -> [FoodItem] {
         response.products.compactMap(foodItem(from:))
@@ -23,7 +20,7 @@ nonisolated enum OFFMapper {
         guard profile.energy != nil else { return nil }
 
         return FoodItem(
-            id: "off-\(code)",
+            id: FoodSource.openFoodFacts.foodID(code: code),
             name: name,
             brand: primaryBrand(from: product.brands),
             source: .openFoodFacts,
@@ -44,7 +41,7 @@ nonisolated enum OFFMapper {
 
         // `energy_100g` is always in kJ, so it's only a fallback when kcal is missing or implausible.
         if profile.energy == nil, let kilojoules = nutriments.values["energy_100g"] {
-            profile.energy = Nutrient.energy.plausibleAmountPer100g(kilojoules / kilojoulesPerKilocalorie)
+            profile.energy = Nutrient.energy.plausibleAmountPer100g(kilojoules / NutrientUnit.kilojoulesPerKilocalorie)
         }
         return profile
     }

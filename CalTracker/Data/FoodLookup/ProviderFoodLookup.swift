@@ -1,4 +1,4 @@
-/// Looks foods up in USDA or Open Food Facts, routed by the `usda-` or `off-` prefix of each ID.
+/// Looks foods up in USDA or Open Food Facts, routed by each ID's `FoodSource.idPrefix`.
 nonisolated struct ProviderFoodLookup: FoodLookup {
     /// The most Open Food Facts lookups in flight at once, to stay polite to its servers.
     static let maxConcurrentProductLookups = 4
@@ -13,8 +13,8 @@ nonisolated struct ProviderFoodLookup: FoodLookup {
     }
 
     func foods(withIDs ids: Set<String>) async -> [String: FoodItem] {
-        let fdcIDs = ids.compactMap { id in id.hasPrefix("usda-") ? Int(id.dropFirst(5)) : nil }.sorted()
-        let codes = ids.filter { $0.hasPrefix("off-") }.map { String($0.dropFirst(4)) }.sorted()
+        let fdcIDs = ids.compactMap { FoodSource.usda.code(fromFoodID: $0).flatMap { Int($0) } }.sorted()
+        let codes = ids.compactMap { FoodSource.openFoodFacts.code(fromFoodID: $0) }.sorted()
 
         async let usdaFoods = usdaFoods(fdcIDs: fdcIDs)
         async let products = products(codes: codes)
@@ -24,10 +24,11 @@ nonisolated struct ProviderFoodLookup: FoodLookup {
     /// Fetches USDA foods in batches of `USDAClient.maxFoodsPerRequest`, one batch at a time to respect the rate limit.
     private func usdaFoods(fdcIDs: [Int]) async -> [String: FoodItem] {
         var found: [String: FoodItem] = [:]
-        for start in stride(from: 0, to: fdcIDs.count, by: USDAClient.maxFoodsPerRequest) {
-            let batch = Array(fdcIDs[start..<min(start + USDAClient.maxFoodsPerRequest, fdcIDs.count)])
+        for batch in fdcIDs.chunked(into: USDAClient.maxFoodsPerRequest) {
+            // Cancellation ends the lookup. A failed request doesn't throw it, so it's checked here.
+            if Task.isCancelled { break }
             do {
-                for food in try await usda.foods(fdcIDs: batch) {
+                for food in try await usda.foods(fdcIDs: Array(batch)) {
                     found[food.id] = food
                 }
             } catch APIError.rateLimited {
