@@ -5,6 +5,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import pytest
+from sqlalchemy import Engine, event
 from sqlmodel import Session
 
 from app.daily_logs import service
@@ -24,6 +25,24 @@ def cursor_for(updated_at: str, log_date: str) -> str:
     """Encodes a cursor the way the server does, for positions it would never hand out."""
     raw = json.dumps([updated_at, log_date]).encode()
     return base64.urlsafe_b64encode(raw).decode()
+
+
+def removals(month: int, days: int) -> LogChanges:
+    """Removes an unknown food from each of the first `days` days of `month`."""
+    return LogChanges(
+        removed=[
+            RemovedFood(log_date=date(2026, month, day), entry_id=uuid.uuid4())
+            for day in range(1, days + 1)
+        ]
+    )
+
+
+@pytest.fixture
+def user(session: Session) -> AppUser:
+    user = AppUser(email="ada@example.com", hashed_password="x")
+    session.add(user)
+    session.commit()
+    return user
 
 
 def test_merge_adds_replaces_and_removes() -> None:
@@ -110,10 +129,9 @@ def test_apply_changes_with_nothing_returns_nothing(session: Session) -> None:
     assert service.apply_changes(session, uuid.uuid4(), LogChanges()) == []
 
 
-def test_apply_changes_creates_row_even_for_removal_only(session: Session) -> None:
-    user = AppUser(email="ada@example.com", hashed_password="x")
-    session.add(user)
-    session.commit()
+def test_apply_changes_creates_row_even_for_removal_only(
+    session: Session, user: AppUser
+) -> None:
     removal = RemovedFood(log_date=date(2026, 10, 29), entry_id=uuid.uuid4())
 
     logs = service.apply_changes(session, user.id, LogChanges(removed=[removal]))
@@ -122,10 +140,7 @@ def test_apply_changes_creates_row_even_for_removal_only(session: Session) -> No
     assert logs[0].foods == []
 
 
-def test_apply_changes_stores_json_ready_items(session: Session) -> None:
-    user = AppUser(email="ada@example.com", hashed_password="x")
-    session.add(user)
-    session.commit()
+def test_apply_changes_stores_json_ready_items(session: Session, user: AppUser) -> None:
     food = AddedFood(
         log_date=date(2026, 10, 29),
         entry_id=uuid.uuid4(),
@@ -145,11 +160,8 @@ def test_apply_changes_stores_json_ready_items(session: Session) -> None:
 
 
 def test_apply_changes_stays_after_a_change_stamped_by_a_clock_ahead(
-    session: Session,
+    session: Session, user: AppUser
 ) -> None:
-    user = AppUser(email="ada@example.com", hashed_password="x")
-    session.add(user)
-    session.commit()
     # Another replica, whose clock runs an hour ahead, saved this day.
     ahead = DailyLog(
         user_id=user.id,
@@ -166,6 +178,37 @@ def test_apply_changes_stays_after_a_change_stamped_by_a_clock_ahead(
 
     assert log.updated_at > ahead.updated_at
     assert [day.log_date for day in days] == [date(2026, 10, 29)]
+
+
+def test_apply_changes_runs_the_same_queries_for_any_number_of_days(
+    session: Session, engine: Engine, user: AppUser
+) -> None:
+    def statements_for(changes: LogChanges) -> int:
+        count = 0
+
+        def count_statement(*_: Any) -> None:
+            nonlocal count
+            count += 1
+
+        event.listen(engine, "before_cursor_execute", count_statement)
+        try:
+            service.apply_changes(session, user.id, changes)
+        finally:
+            event.remove(engine, "before_cursor_execute", count_statement)
+        return count
+
+    few = statements_for(removals(month=1, days=2))
+    many = statements_for(removals(month=2, days=25))
+
+    assert many == few
+
+
+def test_apply_changes_returns_touched_days_oldest_first(
+    session: Session, user: AppUser
+) -> None:
+    logs = service.apply_changes(session, user.id, removals(month=3, days=5))
+
+    assert [log.log_date for log in logs] == [date(2026, 3, day) for day in range(1, 6)]
 
 
 def test_decode_cursor_returns_the_position_in_utc() -> None:

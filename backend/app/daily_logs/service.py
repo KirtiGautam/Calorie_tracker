@@ -3,12 +3,13 @@ import binascii
 import json
 import uuid
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, tuple_
 from sqlmodel import Session, col, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from app.daily_logs.exceptions import InvalidCursor, TooManyFoods
 from app.daily_logs.models import DailyLog
@@ -83,9 +84,10 @@ def apply_changes(
     if latest is not None and latest >= now:
         now = latest + timedelta(microseconds=1)
 
-    logs: list[DailyLog] = []
+    # One query for every touched day, rather than one per day while the account is locked.
+    stored = {log.log_date: log for log in session.exec(_days_query(user_id, days))}
     for log_date in days:
-        log = session.get(DailyLog, (user_id, log_date))
+        log = stored.get(log_date)
         if log is None:
             log = DailyLog(user_id=user_id, log_date=log_date, updated_at=now)
             session.add(log)
@@ -97,12 +99,19 @@ def apply_changes(
                 {"log_date": log_date.isoformat()},
             )
         log.sqlmodel_update({"foods": foods, "updated_at": now} | totals_for(foods))
-        logs.append(log)
 
     session.commit()
-    for log in logs:
-        session.refresh(log)
-    return logs
+    # The commit expired every log, and one query reloads them all instead of a refresh per day.
+    return list(session.exec(_days_query(user_id, days)).all())
+
+
+def _days_query(user_id: uuid.UUID, days: Sequence[date]) -> SelectOfScalar[DailyLog]:
+    """Selects the account's logs for `days`, oldest first."""
+    return (
+        select(DailyLog)
+        .where(DailyLog.user_id == user_id, col(DailyLog.log_date).in_(days))
+        .order_by(col(DailyLog.log_date))
+    )
 
 
 def encode_cursor(log: DailyLog) -> str:
