@@ -2,20 +2,12 @@ import SwiftUI
 
 /// A small capsule naming the database a food came from.
 struct SourceBadge: View {
+    /// The database to name.
     let source: FoodSource
-
-    /// Capsule insets that grow with Dynamic Type so the badge never clips its text.
-    @ScaledMetric(relativeTo: .caption) private var horizontalInset = 8.0
-    @ScaledMetric(relativeTo: .caption) private var verticalInset = 4.0
 
     var body: some View {
         Text(source.title)
-            .font(.caption)
-            .bold()
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, horizontalInset)
-            .padding(.vertical, verticalInset)
-            .background(.fill.tertiary, in: .capsule)
+            .capsuleBadge()
     }
 }
 

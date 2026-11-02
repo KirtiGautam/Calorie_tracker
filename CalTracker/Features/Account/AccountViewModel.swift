@@ -70,7 +70,7 @@ final class AccountViewModel {
             password = ""
             sync.requestSync()
         } catch is CancellationError {
-            // The sheet closed mid-request. Nothing to report.
+            // Cancellation isn't a failure, so there's nothing to report.
         } catch {
             errorMessage = userMessage(for: error)
         }
@@ -101,7 +101,7 @@ final class AccountViewModel {
             try await account.deleteAccount()
             sync.requestSync()
         } catch is CancellationError {
-            // The sheet closed mid-request. Nothing to report.
+            // Cancellation isn't a failure, so there's nothing to report.
         } catch {
             errorMessage = userMessage(for: error)
             // A failed delete may have signed out an expired session, so refresh the status.

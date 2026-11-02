@@ -7,6 +7,7 @@ struct TargetsView: View {
     @State private var viewModel: TargetsViewModel
     @State private var failureMessage: LocalizedStringResource?
 
+    /// Creates the sheet for `viewModel`.
     init(viewModel: TargetsViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
@@ -20,24 +21,9 @@ struct TargetsView: View {
             }
             .navigationTitle(.targetsTitle)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(.cancelAction, systemImage: "xmark", role: .cancel, action: cancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(.saveAction, systemImage: "checkmark", action: save)
-                        .disabled(viewModel.isValid == false)
-                }
-            }
-            .alert(.saveFailedTitle, item: $failureMessage) { _ in
-            } message: { message in
-                Text(message)
-            }
+            .sheetActions(confirm: .saveAction, isDisabled: viewModel.isValid == false, action: save)
+            .errorAlert(.saveFailedTitle, message: $failureMessage)
         }
-    }
-
-    private func cancel() {
-        dismiss()
     }
 
     private func save() {
