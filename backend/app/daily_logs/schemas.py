@@ -1,7 +1,9 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import BaseModel, Field
+
+from app.schemas import UTCDatetime
 
 MAX_CHANGES = 500
 MAX_FOODS_PER_DAY = 200
@@ -15,7 +17,7 @@ class LoggedFood(BaseModel):
     # The fallback when the food can no longer be looked up.
     name: str = Field(min_length=1, max_length=500)
     grams: float = Field(gt=0, le=5000)
-    logged_at: AwareDatetime
+    logged_at: UTCDatetime
     energy_kcal: float | None = Field(default=None, ge=0, le=50_000)
     protein_g: float | None = Field(default=None, ge=0, le=5000)
     carbs_g: float | None = Field(default=None, ge=0, le=5000)
