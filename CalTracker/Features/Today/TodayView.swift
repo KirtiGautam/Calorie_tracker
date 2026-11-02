@@ -84,20 +84,18 @@ struct TodayView: View {
                 AccountView(viewModel: dependencies.makeAccountViewModel())
             }
         }
-        .task {
-            dependencies.sync.requestSync()
-        }
         .sensoryFeedback(.success, trigger: confirmation) { _, newValue in
             newValue != nil
         }
         .task(id: confirmation) {
             await hideConfirmationAfterDelay()
         }
-        .onChange(of: scenePhase) { _, newPhase in
+        // `initial: true` covers launch, so a separate launch sync would start a second pass.
+        .onChange(of: scenePhase, initial: true) { _, newPhase in
             sceneDidChange(to: newPhase)
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
-            refreshReferenceDate()
+        .task {
+            await refreshOnSignificantTimeChanges()
         }
     }
 
@@ -154,7 +152,7 @@ struct TodayView: View {
         }
     }
 
-    /// Rolls the log over and syncs whenever the app comes back to the foreground.
+    /// Rolls the log over and syncs at launch and whenever the app comes back to the foreground.
     private func sceneDidChange(to phase: ScenePhase) {
         if phase == .active {
             refreshReferenceDate()
@@ -164,6 +162,13 @@ struct TodayView: View {
 
     private func refreshReferenceDate() {
         referenceDate = .now
+    }
+
+    /// Rolls the log over at midnight, and after a time zone or clock change, for as long as the view is on screen.
+    private func refreshOnSignificantTimeChanges() async {
+        for await _ in NotificationCenter.default.notifications(named: UIApplication.significantTimeChangeNotification) {
+            refreshReferenceDate()
+        }
     }
 }
 
