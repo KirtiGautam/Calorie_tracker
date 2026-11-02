@@ -6,15 +6,14 @@ from app.auth.dependencies import CurrentUserDep
 from app.daily_logs import service
 from app.daily_logs.schemas import ChangedDays, DailyLogPage, LogChanges
 from app.database import SessionDep
-from app.exceptions import ErrorEnvelope
+from app.exceptions import error_responses
 
 router = APIRouter(
     prefix="/daily-logs",
     tags=["daily-logs"],
-    responses={
-        status.HTTP_401_UNAUTHORIZED: {"model": ErrorEnvelope},
-        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorEnvelope},
-    },
+    responses=error_responses(
+        status.HTTP_401_UNAUTHORIZED, status.HTTP_422_UNPROCESSABLE_CONTENT
+    ),
 )
 
 
