@@ -25,6 +25,15 @@ def food(log_date: str = "2026-10-29", **overrides: Any) -> dict[str, Any]:
     } | overrides
 
 
+def many_days() -> list[dict[str, Any]]:
+    """One food on each of 140 days, more than one page of pulls holds."""
+    return [
+        food(log_date=f"2026-{month:02d}-{day:02d}")
+        for month in range(1, 6)
+        for day in range(1, 29)
+    ]
+
+
 def test_changes_add_foods_and_compute_totals(api: TestClient) -> None:
     headers = bearer(signup(api))
     banana = food()
@@ -137,11 +146,7 @@ def test_changes_limit_foods_per_day(api: TestClient, session: Session) -> None:
 
 def test_pull_pages_through_days_sharing_one_timestamp(api: TestClient) -> None:
     headers = bearer(signup(api))
-    added = [
-        food(log_date=f"2026-{month:02d}-{day:02d}")
-        for month in range(1, 6)
-        for day in range(1, 29)
-    ]
+    added = many_days()
     assert len(added) == 140
     api.post("/daily-logs/changes", headers=headers, json={"added": added})
 
@@ -163,11 +168,7 @@ def test_pull_pages_through_days_sharing_one_timestamp(api: TestClient) -> None:
 
 def test_pull_default_page_holds_100_days(api: TestClient) -> None:
     headers = bearer(signup(api))
-    added = [
-        food(log_date=f"2026-{month:02d}-{day:02d}")
-        for month in range(1, 6)
-        for day in range(1, 29)
-    ]
+    added = many_days()
     api.post("/daily-logs/changes", headers=headers, json={"added": added})
 
     page = api.get("/daily-logs", headers=headers).json()

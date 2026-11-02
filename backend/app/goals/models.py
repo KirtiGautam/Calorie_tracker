@@ -2,16 +2,17 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import CheckConstraint
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
 from app.db_types import UTCDateTime
+from app.macros import Macros
 
 
-class UserGoal(SQLModel, table=True):
+class UserGoal(Macros, table=True):
     """One account's daily targets and weight goal from `effective_from` until the next row's day.
 
-    Each day the goal changes on gets its own row, so earlier days keep the goal they had. The body
-    profile stays on the device.
+    Each day the goal changes on gets its own row, so earlier days keep the goal they had. The
+    targets are the `Macros` fields. The body profile stays on the device.
     """
 
     __tablename__ = "user_goal"
@@ -25,9 +26,5 @@ class UserGoal(SQLModel, table=True):
     # The day the goal was saved on, in the saving device's time zone.
     effective_from: date = Field(primary_key=True)
     goal: str = Field(max_length=16)
-    energy_kcal: float | None = None
-    protein_g: float | None = None
-    carbs_g: float | None = None
-    fat_g: float | None = None
     # When the person saved the goal on their device. The newest save of a day wins.
     updated_at: datetime = Field(sa_type=UTCDateTime)

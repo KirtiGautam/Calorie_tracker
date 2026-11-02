@@ -24,6 +24,19 @@ def issue_tokens(user: AppUser, settings: Settings) -> TokenPair:
     )
 
 
+def user_for_token(
+    session: Session, token: str, token_type: security.TokenType, settings: Settings
+) -> AppUser:
+    """Returns the account named by a valid `token_type` token, or raises `InvalidToken`."""
+    user_id = security.decode_token(
+        token, token_type, settings.jwt_secret.get_secret_value()
+    )
+    user = session.get(AppUser, user_id)
+    if user is None:
+        raise InvalidToken("The account no longer exists")
+    return user
+
+
 def signup(
     session: Session, email: str, password: str, settings: Settings
 ) -> TokenPair:
@@ -33,21 +46,15 @@ def signup(
 
 def login(session: Session, email: str, password: str, settings: Settings) -> TokenPair:
     user = users_service.get_by_email(session, email)
-    if user is None:
-        # Spend the same time as a real check, so timing doesn't reveal which emails exist.
-        security.verify_password(password, security.dummy_hash())
-        raise InvalidCredentials("Incorrect email or password")
-    if not security.verify_password(password, user.hashed_password):
+    # An unknown email is checked against a dummy hash, so timing doesn't reveal which emails exist.
+    hashed = user.hashed_password if user is not None else security.dummy_hash()
+    verified = security.verify_password(password, hashed)
+    if user is None or not verified:
         raise InvalidCredentials("Incorrect email or password")
     return issue_tokens(user, settings)
 
 
 def refresh(session: Session, refresh_token: str, settings: Settings) -> TokenPair:
     """Exchanges a refresh token for a new pair. Tokens are stateless, so the old one stays valid until it expires."""
-    user_id = security.decode_token(
-        refresh_token, "refresh", settings.jwt_secret.get_secret_value()
-    )
-    user = session.get(AppUser, user_id)
-    if user is None:
-        raise InvalidToken("The account no longer exists")
+    user = user_for_token(session, refresh_token, "refresh", settings)
     return issue_tokens(user, settings)
