@@ -20,21 +20,22 @@ nonisolated struct USDAClient: FoodSearchProvider {
         self.configuration = configuration
     }
 
-    func search(_ query: String) async throws -> [FoodItem] {
-        let request = try makeRequest(query: query)
-        let data = try await httpClient.validatedData(for: request)
+    /// Returns one page of whole foods.
+    func search(_ request: FoodSearchRequest) async throws -> FoodSearchPage {
+        let urlRequest = try makeRequest(for: request)
+        let data = try await httpClient.validatedData(for: urlRequest)
         return try await Self.parse(data)
     }
 
-    /// Builds the search request.
+    /// Builds the search request for `request`'s query and page.
     ///
     /// The search criteria go in a JSON POST body rather than the query string because some of
     /// USDA's servers intermittently reject parentheses in the URL (even percent-encoded) with
     /// HTTP 400, and `Survey (FNDDS)` always contains them.
-    func makeRequest(query: String) throws -> URLRequest {
+    func makeRequest(for request: FoodSearchRequest) throws -> URLRequest {
         try makePOSTRequest(
             path: "/fdc/v1/foods/search",
-            body: SearchCriteria(query: query, dataType: Self.dataTypes, pageSize: Self.pageSize)
+            body: SearchCriteria(query: request.query, dataType: Self.dataTypes, pageSize: Self.pageSize, pageNumber: request.page)
         )
     }
 
@@ -79,6 +80,7 @@ nonisolated struct USDAClient: FoodSearchProvider {
         let query: String
         let dataType: [String]
         let pageSize: Int
+        let pageNumber: Int
     }
 
     /// The JSON body of a `foods` POST request.
@@ -89,9 +91,9 @@ nonisolated struct USDAClient: FoodSearchProvider {
 
     /// Decodes and maps a search response off the caller's actor, since responses can be large.
     @concurrent
-    static func parse(_ data: Data) async throws -> [FoodItem] {
+    static func parse(_ data: Data) async throws -> FoodSearchPage {
         let response = try JSONDecoder().decodeResponse(USDASearchResponse.self, from: data)
-        return USDAMapper.foodItems(from: response)
+        return FoodSearchPage(foods: USDAMapper.foodItems(from: response), hasMore: response.hasMore)
     }
 
     /// Decodes and maps a `foods` response off the caller's actor.

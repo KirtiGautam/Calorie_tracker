@@ -24,18 +24,20 @@ nonisolated struct OpenFoodFactsClient: FoodSearchProvider {
         self.httpClient = httpClient
     }
 
-    func search(_ query: String) async throws -> [FoodItem] {
-        let request = try makeRequest(query: query)
-        let data = try await httpClient.validatedData(for: request)
+    /// Returns one page of products.
+    func search(_ request: FoodSearchRequest) async throws -> FoodSearchPage {
+        let urlRequest = try makeRequest(for: request)
+        let data = try await httpClient.validatedData(for: urlRequest)
         return try await Self.parse(data)
     }
 
     /// Builds the search request, including the required User-Agent.
     ///
     /// Uses OFF's Search-a-licious service, since the legacy `/cgi-bin/search.pl` endpoint now returns 404.
-    func makeRequest(query: String) throws -> URLRequest {
+    func makeRequest(for request: FoodSearchRequest) throws -> URLRequest {
         try Self.makeGETRequest(host: "search.openfoodfacts.org", path: "/search", queryItems: [
-            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "q", value: request.query),
+            URLQueryItem(name: "page", value: String(request.page)),
             URLQueryItem(name: "page_size", value: String(Self.pageSize)),
             URLQueryItem(name: "fields", value: Self.fields),
         ])
@@ -96,8 +98,8 @@ nonisolated struct OpenFoodFactsClient: FoodSearchProvider {
 
     /// Decodes and maps a search response off the caller's actor, since responses can be large.
     @concurrent
-    static func parse(_ data: Data) async throws -> [FoodItem] {
+    static func parse(_ data: Data) async throws -> FoodSearchPage {
         let response = try JSONDecoder().decodeResponse(OFFSearchResponse.self, from: data)
-        return OFFMapper.foodItems(from: response)
+        return FoodSearchPage(foods: OFFMapper.foodItems(from: response), hasMore: response.hasMore)
     }
 }

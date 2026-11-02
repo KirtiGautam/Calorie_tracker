@@ -3,18 +3,29 @@ nonisolated struct USDASearchResponse: Decodable, Sendable {
     /// The matching foods.
     let foods: [Food]
 
+    /// The page these foods are on, starting at 1.
+    let currentPage: Int?
+
+    /// How many pages of results there are.
+    let totalPages: Int?
+
     private enum CodingKeys: String, CodingKey {
         case foods
-    }
-
-    /// Creates a response from already-decoded foods.
-    init(foods: [Food]) {
-        self.foods = foods
+        case currentPage
+        case totalPages
     }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         foods = try container.decodeIfPresent([Food].self, forKey: .foods) ?? []
+        currentPage = try? container.decodeIfPresent(Int.self, forKey: .currentPage)
+        totalPages = try? container.decodeIfPresent(Int.self, forKey: .totalPages)
+    }
+
+    /// Whether there's a page after this one. `false` when the response doesn't say.
+    var hasMore: Bool {
+        guard let currentPage, let totalPages else { return false }
+        return currentPage < totalPages
     }
 
     /// One food in the search results.
