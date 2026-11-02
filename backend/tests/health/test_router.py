@@ -3,8 +3,7 @@ from typing import Any
 
 from fastapi.testclient import TestClient
 from sqlalchemy import exc as sa_exc
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, create_engine
+from sqlmodel import Session
 
 from app.database import get_session
 from app.main import app
@@ -15,16 +14,6 @@ class UnreachableSession(Session):
 
     def connection(self, *args: Any, **kwargs: Any) -> Any:
         raise sa_exc.OperationalError("SELECT 1", {}, ConnectionRefusedError())
-
-
-def sqlite_session() -> Iterator[Session]:
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    with Session(engine) as session:
-        yield session
 
 
 def unreachable_session() -> Iterator[Session]:
@@ -39,10 +28,8 @@ def test_liveness_returns_ok(client: TestClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_readiness_returns_ok_when_database_answers(client: TestClient) -> None:
-    app.dependency_overrides[get_session] = sqlite_session
-
-    response = client.get("/health/ready")
+def test_readiness_returns_ok_when_database_answers(api: TestClient) -> None:
+    response = api.get("/health/ready")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
