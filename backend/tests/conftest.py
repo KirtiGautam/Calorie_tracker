@@ -2,22 +2,26 @@ import os
 from collections.abc import Iterator
 from typing import Any
 
-# Settings are read at import time, so this must run before `app` is imported.
-# The URL is never connected to: tests that need a database override the session.
+# Settings are read at import time, so this must run before `app` is imported. Every setting is
+# pinned, so neither the shell nor a developer's .env can change what the tests see
+# (tests/test_config.py checks that none is missed). The URL is never connected to: tests that
+# need a database override the session.
 os.environ["DATABASE_URL"] = "postgresql://test:test@db.invalid:5432/test"
 os.environ["FASTAPI_ENV"] = "production"
 os.environ["JWT_SECRET"] = "test-secret-that-is-long-enough-for-hs256-0123456789"
+os.environ["ACCESS_TOKEN_MINUTES"] = "30"
+os.environ["REFRESH_TOKEN_DAYS"] = "60"
 
-import pytest  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import Engine, event  # noqa: E402
-from sqlalchemy.pool import StaticPool  # noqa: E402
-from sqlmodel import Session, SQLModel, create_engine  # noqa: E402
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import Engine, event
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
 
-from app.database import get_session  # noqa: E402
+from app.database import get_session
 
 # Importing the app registers every table model, through the routers, for create_all.
-from app.main import app  # noqa: E402
+from app.main import app
 
 
 @pytest.fixture

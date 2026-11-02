@@ -6,13 +6,19 @@ from pydantic import Field, PostgresDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PLACEHOLDER_SECRET = "changethis"  # noqa: S105 - the value the validator rejects, not a secret
+# HS256 keys shorter than its 32-byte hash are easier to brute-force, and PyJWT warns about them.
+MIN_SECRET_BYTES = 32
 
 
 class Settings(BaseSettings):
     """App settings, read from the environment and, for local runs, from `.env`."""
 
+    # hide_input_in_errors keeps JWT_SECRET and the password in DATABASE_URL out of startup errors.
     model_config = SettingsConfigDict(
-        env_file=".env", env_ignore_empty=True, extra="ignore"
+        env_file=".env",
+        env_ignore_empty=True,
+        extra="ignore",
+        hide_input_in_errors=True,
     )
 
     fastapi_env: Literal["development", "staging", "production"] = "production"
@@ -24,12 +30,19 @@ class Settings(BaseSettings):
     refresh_token_days: int = Field(default=60, ge=1, le=365)
 
     @model_validator(mode="after")
-    def reject_placeholder_secret(self) -> Self:
-        """Fails startup when a deployed environment still uses the example secret."""
+    def reject_weak_secret(self) -> Self:
+        """Fails startup when a deployed environment uses the example secret or one too short for HS256."""
+        if self.fastapi_env == "development":
+            return self
         secret = self.jwt_secret.get_secret_value()
-        if self.fastapi_env != "development" and secret == PLACEHOLDER_SECRET:
+        if secret == PLACEHOLDER_SECRET:
             raise ValueError(
                 "JWT_SECRET is still 'changethis'. Set a real secret outside development."
+            )
+        if len(secret.encode()) < MIN_SECRET_BYTES:
+            raise ValueError(
+                f"JWT_SECRET must be at least {MIN_SECRET_BYTES} bytes outside development. "
+                "Generate one with `openssl rand -hex 32`."
             )
         return self
 

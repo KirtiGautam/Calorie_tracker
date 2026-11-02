@@ -43,6 +43,11 @@ class ErrorEnvelope(BaseModel):
     error: ErrorBody
 
 
+def error_responses(*status_codes: int) -> dict[int | str, dict[str, Any]]:
+    """OpenAPI `responses` entries that document the error envelope for each of `status_codes`."""
+    return {status_code: {"model": ErrorEnvelope} for status_code in status_codes}
+
+
 def error_response(
     status_code: int,
     code: str,
