@@ -3,19 +3,19 @@ import binascii
 import json
 import uuid
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, tuple_
 from sqlmodel import Session, col, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from app.daily_logs.exceptions import InvalidCursor, TooManyFoods
 from app.daily_logs.models import DailyLog
 from app.daily_logs.schemas import MAX_FOODS_PER_DAY, LogChanges
-from app.users.models import AppUser
-
-MACRO_KEYS = ("energy_kcal", "protein_g", "carbs_g", "fat_g")
+from app.macros import MACRO_KEYS
+from app.users import service as users_service
 
 
 def merge_foods(
@@ -26,6 +26,7 @@ def merge_foods(
     """Merges by `entry_id`: an added item replaces one with the same ID, and removed IDs are dropped.
 
     Removal wins over an addition in the same change. The result is ordered by `logged_at`, then ID.
+    Times are compared parsed, because as text `08:00:00.5Z` sorts before `08:00:00Z`.
     """
     by_id = {item["entry_id"]: item for item in existing}
     for item in added:
@@ -33,7 +34,8 @@ def merge_foods(
     for entry_id in removed_ids:
         by_id.pop(entry_id, None)
     return sorted(
-        by_id.values(), key=lambda item: (item["logged_at"], item["entry_id"])
+        by_id.values(),
+        key=lambda item: (datetime.fromisoformat(item["logged_at"]), item["entry_id"]),
     )
 
 
@@ -68,9 +70,7 @@ def apply_changes(
 
     # Locking the account serializes one person's pushes, so `updated_at` grows in commit order
     # and a pull can never move its cursor past a push that hasn't committed yet.
-    session.exec(
-        select(AppUser.id).where(AppUser.id == user_id).with_for_update()
-    ).one()
+    users_service.lock_account(session, user_id)
     # Each API replica has its own clock, and one running behind could stamp this push before a
     # change a pull has already passed. Staying after the account's latest change keeps every
     # cursor handed out so far behind this push, whatever the clocks say.
@@ -81,9 +81,10 @@ def apply_changes(
     if latest is not None and latest >= now:
         now = latest + timedelta(microseconds=1)
 
-    logs: list[DailyLog] = []
+    # One query for every touched day, rather than one per day while the account is locked.
+    stored = {log.log_date: log for log in session.exec(_days_query(user_id, days))}
     for log_date in days:
-        log = session.get(DailyLog, (user_id, log_date))
+        log = stored.get(log_date)
         if log is None:
             log = DailyLog(user_id=user_id, log_date=log_date, updated_at=now)
             session.add(log)
@@ -95,12 +96,19 @@ def apply_changes(
                 {"log_date": log_date.isoformat()},
             )
         log.sqlmodel_update({"foods": foods, "updated_at": now} | totals_for(foods))
-        logs.append(log)
 
     session.commit()
-    for log in logs:
-        session.refresh(log)
-    return logs
+    # The commit expired every log, and one query reloads them all instead of a refresh per day.
+    return list(session.exec(_days_query(user_id, days)).all())
+
+
+def _days_query(user_id: uuid.UUID, days: Sequence[date]) -> SelectOfScalar[DailyLog]:
+    """Selects the account's logs for `days`, oldest first."""
+    return (
+        select(DailyLog)
+        .where(DailyLog.user_id == user_id, col(DailyLog.log_date).in_(days))
+        .order_by(col(DailyLog.log_date))
+    )
 
 
 def encode_cursor(log: DailyLog) -> str:
@@ -109,14 +117,18 @@ def encode_cursor(log: DailyLog) -> str:
 
 
 def decode_cursor(cursor: str) -> tuple[datetime, date]:
+    """Returns the position in `cursor`, or raises `InvalidCursor` for one this server didn't hand out."""
     try:
-        updated_at, log_date = json.loads(base64.urlsafe_b64decode(cursor.encode()))
-        position = (datetime.fromisoformat(updated_at), date.fromisoformat(log_date))
-    except (binascii.Error, ValueError, TypeError) as exc:
+        raw_updated_at, raw_log_date = json.loads(
+            base64.urlsafe_b64decode(cursor.encode())
+        )
+        updated_at = datetime.fromisoformat(raw_updated_at)
+        if updated_at.tzinfo is None:
+            raise ValueError("The cursor's timestamp has no time zone")
+        # Converting here, rather than when SQLAlchemy binds it, makes an out-of-range value a 422.
+        return updated_at.astimezone(UTC), date.fromisoformat(raw_log_date)
+    except (binascii.Error, ValueError, TypeError, OverflowError) as exc:
         raise InvalidCursor("The cursor isn't valid") from exc
-    if position[0].tzinfo is None:
-        raise InvalidCursor("The cursor isn't valid")
-    return position
 
 
 def list_changed(

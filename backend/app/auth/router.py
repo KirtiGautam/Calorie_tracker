@@ -4,16 +4,20 @@ from app.auth import service
 from app.auth.schemas import LoginRequest, RefreshRequest, SignupRequest, TokenPair
 from app.config import SettingsDep
 from app.database import SessionDep
-from app.exceptions import ErrorEnvelope
+from app.exceptions import error_responses
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+    responses=error_responses(status.HTTP_422_UNPROCESSABLE_CONTENT),
+)
 
 
 @router.post(
     "/signup",
     summary="Create an account",
     status_code=status.HTTP_201_CREATED,
-    responses={status.HTTP_409_CONFLICT: {"model": ErrorEnvelope}},
+    responses=error_responses(status.HTTP_409_CONFLICT),
 )
 def signup(
     body: SignupRequest, session: SessionDep, settings: SettingsDep
@@ -25,7 +29,7 @@ def signup(
 @router.post(
     "/login",
     summary="Sign in",
-    responses={status.HTTP_401_UNAUTHORIZED: {"model": ErrorEnvelope}},
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED),
 )
 def login(body: LoginRequest, session: SessionDep, settings: SettingsDep) -> TokenPair:
     """Returns 401 `invalid_credentials` for a wrong password or an unknown email alike."""
@@ -35,7 +39,7 @@ def login(body: LoginRequest, session: SessionDep, settings: SettingsDep) -> Tok
 @router.post(
     "/refresh",
     summary="Exchange a refresh token for a new pair",
-    responses={status.HTTP_401_UNAUTHORIZED: {"model": ErrorEnvelope}},
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED),
 )
 def refresh(
     body: RefreshRequest, session: SessionDep, settings: SettingsDep
