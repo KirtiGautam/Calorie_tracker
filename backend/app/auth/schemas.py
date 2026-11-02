@@ -1,15 +1,8 @@
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import BaseModel, BeforeValidator, EmailStr, Field
+from pydantic import BaseModel, Field
 
-from app.users.schemas import UserPublic
-
-
-def _normalize_email(value: object) -> object:
-    return value.strip().lower() if isinstance(value, str) else value
-
-
-NormalizedEmail = Annotated[EmailStr, BeforeValidator(_normalize_email)]
+from app.users.schemas import NormalizedEmail, UserPublic
 
 
 class SignupRequest(BaseModel):
