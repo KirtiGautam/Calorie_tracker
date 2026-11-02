@@ -1,3 +1,5 @@
+import base64
+import json
 import uuid
 from typing import Any
 
@@ -21,6 +23,15 @@ def food(log_date: str = "2026-10-29", **overrides: Any) -> dict[str, Any]:
         "carbs_g": 27.4,
         "fat_g": 0.4,
     } | overrides
+
+
+def many_days() -> list[dict[str, Any]]:
+    """One food on each of 140 days, more than one page of pulls holds."""
+    return [
+        food(log_date=f"2026-{month:02d}-{day:02d}")
+        for month in range(1, 6)
+        for day in range(1, 29)
+    ]
 
 
 def test_changes_add_foods_and_compute_totals(api: TestClient) -> None:
@@ -74,6 +85,19 @@ def test_changes_are_idempotent(api: TestClient) -> None:
     assert [d["energy_kcal"] for d in second["days"]] == [107, 107]
 
 
+def test_changes_store_logged_at_in_utc(api: TestClient) -> None:
+    headers = bearer(signup(api))
+
+    response = api.post(
+        "/daily-logs/changes",
+        headers=headers,
+        json={"added": [food(logged_at="2026-10-29T10:15:00+02:00")]},
+    )
+
+    [day] = response.json()["days"]
+    assert day["foods"][0]["logged_at"] == "2026-10-29T08:15:00Z"
+
+
 def test_changes_validate_items(api: TestClient) -> None:
     headers = bearer(signup(api))
     bad = [
@@ -81,6 +105,7 @@ def test_changes_validate_items(api: TestClient) -> None:
         food(grams=0),
         food(grams=5001),
         food(logged_at="2026-10-29T08:15:00"),
+        food(logged_at="0001-01-01T00:00:00+14:00"),
         food(energy_kcal=-1),
     ]
 
@@ -121,11 +146,7 @@ def test_changes_limit_foods_per_day(api: TestClient, session: Session) -> None:
 
 def test_pull_pages_through_days_sharing_one_timestamp(api: TestClient) -> None:
     headers = bearer(signup(api))
-    added = [
-        food(log_date=f"2026-{month:02d}-{day:02d}")
-        for month in range(1, 6)
-        for day in range(1, 29)
-    ]
+    added = many_days()
     assert len(added) == 140
     api.post("/daily-logs/changes", headers=headers, json={"added": added})
 
@@ -147,11 +168,7 @@ def test_pull_pages_through_days_sharing_one_timestamp(api: TestClient) -> None:
 
 def test_pull_default_page_holds_100_days(api: TestClient) -> None:
     headers = bearer(signup(api))
-    added = [
-        food(log_date=f"2026-{month:02d}-{day:02d}")
-        for month in range(1, 6)
-        for day in range(1, 29)
-    ]
+    added = many_days()
     api.post("/daily-logs/changes", headers=headers, json={"added": added})
 
     page = api.get("/daily-logs", headers=headers).json()
@@ -190,6 +207,20 @@ def test_pull_with_no_days_has_no_cursor(api: TestClient) -> None:
 def test_pull_rejects_bad_cursor(api: TestClient) -> None:
     response = api.get(
         "/daily-logs", headers=bearer(signup(api)), params={"cursor": "nope"}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "invalid_cursor"
+
+
+def test_pull_rejects_cursor_out_of_range(api: TestClient) -> None:
+    # Before year 1 once converted to UTC, which used to fail with a 500.
+    raw = json.dumps(["0001-01-01T00:00:00+14:00", "2026-10-29"]).encode()
+
+    response = api.get(
+        "/daily-logs",
+        headers=bearer(signup(api)),
+        params={"cursor": base64.urlsafe_b64encode(raw).decode()},
     )
 
     assert response.status_code == 422

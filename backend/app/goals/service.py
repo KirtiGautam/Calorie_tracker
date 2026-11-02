@@ -6,7 +6,7 @@ from sqlmodel import Session, col, select
 from app.goals.exceptions import GoalNotFound, GoalOutdated, InvalidGoalDate
 from app.goals.models import UserGoal
 from app.goals.schemas import GoalIn
-from app.users.models import AppUser
+from app.users import service as users_service
 
 
 def current(session: Session, user_id: uuid.UUID) -> UserGoal | None:
@@ -34,10 +34,10 @@ def put(
     A goal for a later day than the current one is added as a new row, so earlier days keep their
     goal. One for the same day replaces it when it was saved later, and an identical save (a retry)
     returns the stored goal unchanged. Anything older raises `GoalOutdated`, so a past day's goal
-    never changes.
+    never changes. `now` is the current UTC time, which tests may pin.
     """
-    # A device clock set in the future would otherwise win every later comparison.
-    updated_at = min(goal_in.updated_at, now or datetime.now(UTC)).astimezone(UTC)
+    # A device clock set in the future would otherwise win every later comparison. Both are UTC.
+    updated_at = min(goal_in.updated_at, now or datetime.now(UTC))
     # Time zones run from UTC-12 to UTC+14, so the device's day is within one day of the UTC day.
     # This also stops a goal dated in the future from locking out every later save.
     saved_on = updated_at.date()
@@ -50,9 +50,7 @@ def put(
     values = goal_in.model_dump(exclude={"updated_at", "effective_from"})
 
     # Locking the account serializes one person's saves, so two can't both add the same day.
-    session.exec(
-        select(AppUser.id).where(AppUser.id == user_id).with_for_update()
-    ).one()
+    users_service.lock_account(session, user_id)
     stored = current(session, user_id)
 
     if stored is None or goal_in.effective_from > stored.effective_from:

@@ -4,7 +4,13 @@ from pathlib import Path
 import pytest
 from sqlmodel import SQLModel
 
-from migrations.migrate import Migration, MigrationError, load_migrations, pending
+from migrations.migrate import (
+    Migration,
+    MigrationError,
+    load_migrations,
+    main,
+    pending,
+)
 
 
 def write(directory: Path, name: str, sql: str = "SELECT 1;") -> None:
@@ -56,6 +62,12 @@ def test_pending_refuses_a_deleted_migration() -> None:
 
     with pytest.raises(MigrationError, match="missing from disk"):
         pending([], {gone.version: gone.checksum})
+
+
+def test_main_fails_without_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
+    assert main() == 1
 
 
 def test_sql_creates_every_model_table_and_column() -> None:

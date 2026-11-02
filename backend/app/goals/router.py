@@ -4,14 +4,14 @@ from fastapi import APIRouter, status
 
 from app.auth.dependencies import CurrentUserDep
 from app.database import SessionDep
-from app.exceptions import ErrorEnvelope
+from app.exceptions import error_responses
 from app.goals import service
 from app.goals.schemas import GoalIn, GoalPublic
 
 router = APIRouter(
     prefix="/me/goal",
     tags=["goals"],
-    responses={status.HTTP_401_UNAUTHORIZED: {"model": ErrorEnvelope}},
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED),
 )
 
 
@@ -19,7 +19,7 @@ router = APIRouter(
     "",
     summary="Read the current goal",
     response_model=GoalPublic,
-    responses={status.HTTP_404_NOT_FOUND: {"model": ErrorEnvelope}},
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 def read_goal(user: CurrentUserDep, session: SessionDep) -> Any:
     """Returns the goal with the latest `effective_from`."""
@@ -30,10 +30,9 @@ def read_goal(user: CurrentUserDep, session: SessionDep) -> Any:
     "",
     summary="Save the goal for a day",
     response_model=GoalPublic,
-    responses={
-        status.HTTP_409_CONFLICT: {"model": ErrorEnvelope},
-        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorEnvelope},
-    },
+    responses=error_responses(
+        status.HTTP_409_CONFLICT, status.HTTP_422_UNPROCESSABLE_CONTENT
+    ),
 )
 def put_goal(goal_in: GoalIn, user: CurrentUserDep, session: SessionDep) -> Any:
     """Saves the goal from `effective_from` on and returns it.
