@@ -26,6 +26,7 @@ def merge_foods(
     """Merges by `entry_id`: an added item replaces one with the same ID, and removed IDs are dropped.
 
     Removal wins over an addition in the same change. The result is ordered by `logged_at`, then ID.
+    Times are compared parsed, because as text `08:00:00.5Z` sorts before `08:00:00Z`.
     """
     by_id = {item["entry_id"]: item for item in existing}
     for item in added:
@@ -33,7 +34,8 @@ def merge_foods(
     for entry_id in removed_ids:
         by_id.pop(entry_id, None)
     return sorted(
-        by_id.values(), key=lambda item: (item["logged_at"], item["entry_id"])
+        by_id.values(),
+        key=lambda item: (datetime.fromisoformat(item["logged_at"]), item["entry_id"]),
     )
 
 
@@ -109,14 +111,18 @@ def encode_cursor(log: DailyLog) -> str:
 
 
 def decode_cursor(cursor: str) -> tuple[datetime, date]:
+    """Returns the position in `cursor`, or raises `InvalidCursor` for one this server didn't hand out."""
     try:
-        updated_at, log_date = json.loads(base64.urlsafe_b64decode(cursor.encode()))
-        position = (datetime.fromisoformat(updated_at), date.fromisoformat(log_date))
-    except (binascii.Error, ValueError, TypeError) as exc:
+        raw_updated_at, raw_log_date = json.loads(
+            base64.urlsafe_b64decode(cursor.encode())
+        )
+        updated_at = datetime.fromisoformat(raw_updated_at)
+        if updated_at.tzinfo is None:
+            raise ValueError("The cursor's timestamp has no time zone")
+        # Converting here, rather than when SQLAlchemy binds it, makes an out-of-range value a 422.
+        return updated_at.astimezone(UTC), date.fromisoformat(raw_log_date)
+    except (binascii.Error, ValueError, TypeError, OverflowError) as exc:
         raise InvalidCursor("The cursor isn't valid") from exc
-    if position[0].tzinfo is None:
-        raise InvalidCursor("The cursor isn't valid")
-    return position
 
 
 def list_changed(

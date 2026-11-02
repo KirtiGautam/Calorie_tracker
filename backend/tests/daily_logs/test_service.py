@@ -1,3 +1,5 @@
+import base64
+import json
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -16,6 +18,12 @@ def item(
     entry_id: str, logged_at: str = "2026-10-29T08:00:00Z", **macros: Any
 ) -> dict[str, Any]:
     return {"entry_id": entry_id, "logged_at": logged_at, **macros}
+
+
+def cursor_for(updated_at: str, log_date: str) -> str:
+    """Encodes a cursor the way the server does, for positions it would never hand out."""
+    raw = json.dumps([updated_at, log_date]).encode()
+    return base64.urlsafe_b64encode(raw).decode()
 
 
 def test_merge_adds_replaces_and_removes() -> None:
@@ -49,6 +57,24 @@ def test_merge_orders_by_logged_at() -> None:
     )
 
     assert [food["entry_id"] for food in merged] == ["early", "late"]
+
+
+def test_merge_orders_by_time_not_by_text() -> None:
+    merged = service.merge_foods(
+        [],
+        added=[
+            item("half-past", "2026-10-29T08:00:00.500000Z"),
+            item("on-the-second", "2026-10-29T08:00:00Z"),
+            item("earliest", "2026-10-29T09:30:00+02:00"),
+        ],
+        removed_ids=[],
+    )
+
+    assert [food["entry_id"] for food in merged] == [
+        "earliest",
+        "on-the-second",
+        "half-past",
+    ]
 
 
 def test_merge_is_idempotent() -> None:
@@ -140,6 +166,30 @@ def test_apply_changes_stays_after_a_change_stamped_by_a_clock_ahead(
 
     assert log.updated_at > ahead.updated_at
     assert [day.log_date for day in days] == [date(2026, 10, 29)]
+
+
+def test_decode_cursor_returns_the_position_in_utc() -> None:
+    position = service.decode_cursor(
+        cursor_for("2026-10-29T10:00:00+02:00", "2026-10-29")
+    )
+
+    assert position == (datetime(2026, 10, 29, 8, tzinfo=UTC), date(2026, 10, 29))
+    assert position[0].tzinfo == UTC
+
+
+@pytest.mark.parametrize(
+    ("updated_at", "log_date"),
+    [
+        ("0001-01-01T00:00:00+14:00", "2026-10-29"),  # before year 1 in UTC
+        ("9999-12-31T23:59:59-14:00", "2026-10-29"),  # after year 9999 in UTC
+        ("2026-10-29T08:00:00Z", "2026-02-30"),
+    ],
+)
+def test_decode_cursor_rejects_out_of_range_positions(
+    updated_at: str, log_date: str
+) -> None:
+    with pytest.raises(InvalidCursor):
+        service.decode_cursor(cursor_for(updated_at, log_date))
 
 
 @pytest.mark.parametrize(

@@ -34,10 +34,10 @@ def put(
     A goal for a later day than the current one is added as a new row, so earlier days keep their
     goal. One for the same day replaces it when it was saved later, and an identical save (a retry)
     returns the stored goal unchanged. Anything older raises `GoalOutdated`, so a past day's goal
-    never changes.
+    never changes. `now` is the current UTC time, which tests may pin.
     """
-    # A device clock set in the future would otherwise win every later comparison.
-    updated_at = min(goal_in.updated_at, now or datetime.now(UTC)).astimezone(UTC)
+    # A device clock set in the future would otherwise win every later comparison. Both are UTC.
+    updated_at = min(goal_in.updated_at, now or datetime.now(UTC))
     # Time zones run from UTC-12 to UTC+14, so the device's day is within one day of the UTC day.
     # This also stops a goal dated in the future from locking out every later save.
     saved_on = updated_at.date()

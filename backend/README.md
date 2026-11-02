@@ -52,7 +52,7 @@ Every route except `/health` and `/auth/*` needs `Authorization: Bearer <access_
 
 A `user_goal` row holds the goal from its `effective_from` day (the day it was saved, on the device that saved it) until the next row's day, so changing the goal never changes what earlier days were measured against. A PUT for a later day than the current goal adds a row. One for the same day replaces that day's goal when its `updated_at` is newer, and resending the stored goal returns it unchanged. Anything older (an earlier day, or an earlier save the same day) returns 409 `goal_outdated`, because past days' goals can't change. `effective_from` must be `updated_at`'s day in some time zone (within a day of its UTC date), or the PUT returns 422 `invalid_goal_date`. `updated_at` is capped at the server's clock.
 
-A `daily_log` row holds one day's foods as a JSONB list. Each item carries `entry_id`, `food_id` (`usda-…` or `off-…`), `name`, `grams`, `logged_at` and the macros for the amount eaten (`energy_kcal`, `protein_g`, `carbs_g`, `fat_g`, `null` when unknown). The server recomputes the day's totals from them on every change. A day whose foods were all removed stays, with `foods: []`, so the removal reaches other devices.
+A `daily_log` row holds one day's foods as a JSONB list. Each item carries `entry_id`, `food_id` (`usda-…` or `off-…`), `name`, `grams`, `logged_at` (stored and returned in UTC) and the macros for the amount eaten (`energy_kcal`, `protein_g`, `carbs_g`, `fat_g`, `null` when unknown). The server recomputes the day's totals from them on every change. A day whose foods were all removed stays, with `foods: []`, so the removal reaches other devices.
 
 ## Check
 
