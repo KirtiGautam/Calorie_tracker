@@ -12,6 +12,8 @@ final class LogFoodFlowUITests: XCTestCase {
 
     func testSearchPickAndLogRajma() {
         let app = XCUIApplication()
+        // A country filter saved by hand would change what the live search returns.
+        app.launchArguments += ["-search.regionFilterEnabled", "NO"]
         app.launch()
         attachScreenshot(named: "1 Today")
 
@@ -35,6 +37,8 @@ final class LogFoodFlowUITests: XCTestCase {
         let firstResult = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "per 100 g")).firstMatch
         XCTAssertTrue(firstResult.waitForExistence(timeout: resultsTimeout), "No search results appeared")
         attachScreenshot(named: "3 Results")
+        // iOS hides toolbar items while the search field is active, so the filters must live outside the toolbar.
+        XCTAssertTrue(app.buttons["searchFilters"].isHittable, "The filters can't be reached while searching")
         let pickedLabel = firstResult.label
         firstResult.tap()
 

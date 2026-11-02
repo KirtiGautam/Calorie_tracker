@@ -4,31 +4,46 @@ import Testing
 
 @Suite(.tags(.networking))
 struct OpenFoodFactsClientTests {
-    @Test func searchRequestSendsThePage() throws {
+    @Test func searchRequestSendsThePageAndAsksForBrandsOnlyOnPageOne() throws {
         let client = OpenFoodFactsClient(httpClient: MockHTTPClient(data: Data()))
 
         let first = try queryItems(of: client.makeRequest(for: FoodSearchRequest(query: "biscuit", page: 1)))
         let third = try queryItems(of: client.makeRequest(for: FoodSearchRequest(query: "biscuit", page: 3)))
 
         #expect(first["page"] == "1")
+        #expect(first["facets"] == "brands_tags")
         #expect(third["page"] == "3")
+        #expect(third["facets"] == nil)
     }
 
-    @Test func searchReadsPaging() async throws {
+    @Test func searchRequestPutsFiltersInTheQuery() throws {
+        let client = OpenFoodFactsClient(httpClient: MockHTTPClient(data: Data()))
+        let filters = FoodSearchFilters(regionEnabled: true, regionCode: "IN", brand: .tag("parle", name: "Parle"))
+
+        let items = try queryItems(of: client.makeRequest(for: FoodSearchRequest(query: "biscuit", filters: filters)))
+
+        #expect(items["q"] == #"biscuit countries_tags:"en:india" brands_tags:"parle""#)
+    }
+
+    @Test func searchReadsPagingAndTopBrands() async throws {
         let http = MockHTTPClient(data: try FixtureLoader.data(named: "off_search_page"))
 
         let page = try await OpenFoodFactsClient(httpClient: http).search(FoodSearchRequest(query: "biscuit"))
 
         #expect(page.hasMore)
         #expect(page.foods.map(\.name) == ["Parle-G", "Good Day Cashew Cookies", "Fruit Biscuits"])
+        #expect(page.brands.map(\.tag) == ["britannia", "parle", "sunfeast", "karachi-bakery"], "--other-- isn't a brand")
+        // Names come from the products' own spelling, or the tag when no product on the page has that brand.
+        #expect(page.brands.map(\.name) == ["Britannia", "Parle", "Sunfeast", "Karachi Bakery"])
     }
 
-    @Test func searchOnTheLastPageHasNoMore() async throws {
+    @Test func searchOnTheLastPageHasNoMoreAndNoFacetsMeansNoBrands() async throws {
         let http = MockHTTPClient(data: Data(#"{"hits": [], "page": 4, "page_count": 4}"#.utf8))
 
         let page = try await OpenFoodFactsClient(httpClient: http).search(FoodSearchRequest(query: "biscuit", page: 4))
 
         #expect(page.hasMore == false)
+        #expect(page.brands.isEmpty)
     }
 
     @Test func searchWithoutPagingFieldsHasNoMorePages() async throws {

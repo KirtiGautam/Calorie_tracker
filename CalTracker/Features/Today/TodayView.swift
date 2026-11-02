@@ -64,7 +64,11 @@ struct TodayView: View {
             .navigationDestination(for: TodayDestination.self) { destination in
                 switch destination {
                 case .search:
-                    FoodSearchView(viewModel: dependencies.makeSearchViewModel(), onSelect: showLogFood)
+                    FoodSearchView(
+                        viewModel: dependencies.makeSearchViewModel(),
+                        onSelect: showLogFood,
+                        onShowFilters: showSearchFilters
+                    )
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -82,6 +86,12 @@ struct TodayView: View {
                 TargetsView(viewModel: dependencies.makeTargetsViewModel())
             case .account:
                 AccountView(viewModel: dependencies.makeAccountViewModel())
+            case .searchFilters(let viewModel):
+                FoodSearchFiltersView(
+                    filters: viewModel.filters,
+                    brandOptions: viewModel.brandOptions,
+                    onApply: viewModel.applyFilters
+                )
             }
         }
         .sensoryFeedback(.success, trigger: confirmation) { _, newValue in
@@ -127,6 +137,10 @@ struct TodayView: View {
 
     private func showLogFood(_ food: FoodItem) {
         sheet = .logFood(food)
+    }
+
+    private func showSearchFilters(for viewModel: FoodSearchViewModel) {
+        sheet = .searchFilters(viewModel)
     }
 
     /// Returns to Today behind the closing sheet and confirms what was logged.

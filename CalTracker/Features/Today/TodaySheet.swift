@@ -9,11 +9,16 @@ enum TodaySheet: Identifiable {
     /// Create an account, sign in, or manage the account and sync.
     case account
 
+    /// Narrow a food search by country and brand, applying the changes to its view model.
+    case searchFilters(FoodSearchViewModel)
+
+    /// The stable identity of the sheet.
     var id: String {
         switch self {
         case .logFood(let food): "logFood-\(food.id)"
         case .targets: "targets"
         case .account: "account"
+        case .searchFilters: "searchFilters"
         }
     }
 }

@@ -14,6 +14,9 @@ nonisolated struct FoodSearchResults: Sendable {
     /// The sources that failed on page 1, in display order. Those sources don't page any further.
     let failures: [SourceFailure]
 
+    /// The most common Open Food Facts brands for the search, from page 1.
+    let brands: [BrandOption]
+
     /// The first error when every source failed on page 1, or `nil` when at least one succeeded.
     let errorIfAllFailed: (any Error)?
 
@@ -29,6 +32,7 @@ nonisolated struct FoodSearchResults: Sendable {
             return SourceFailure(source: source, error: error)
         }
         self.failures = failures
+        brands = (try? batch.openFoodFacts?.get())?.brands ?? []
         errorIfAllFailed = failures.count == FoodSource.allCases.count ? failures.first?.error : nil
 
         for source in FoodSource.allCases where batch[source] == nil || failures.contains(where: { $0.source == source }) {

@@ -5,4 +5,7 @@ nonisolated struct FoodSearchPage: Sendable {
 
     /// Whether the provider has another page after this one.
     var hasMore = false
+
+    /// The most common brands for the query and filters. Only Open Food Facts fills it, and only on page 1.
+    var brands: [BrandOption] = []
 }

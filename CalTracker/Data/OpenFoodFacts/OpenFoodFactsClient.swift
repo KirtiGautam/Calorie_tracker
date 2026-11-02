@@ -24,7 +24,7 @@ nonisolated struct OpenFoodFactsClient: FoodSearchProvider {
         self.httpClient = httpClient
     }
 
-    /// Returns one page of products.
+    /// Returns one page of products, narrowed by the request's country and brand filters.
     func search(_ request: FoodSearchRequest) async throws -> FoodSearchPage {
         let urlRequest = try makeRequest(for: request)
         let data = try await httpClient.validatedData(for: urlRequest)
@@ -34,13 +34,18 @@ nonisolated struct OpenFoodFactsClient: FoodSearchProvider {
     /// Builds the search request, including the required User-Agent.
     ///
     /// Uses OFF's Search-a-licious service, since the legacy `/cgi-bin/search.pl` endpoint now returns 404.
+    /// Page 1 also asks for the most common brands, which later pages don't need.
     func makeRequest(for request: FoodSearchRequest) throws -> URLRequest {
-        try Self.makeGETRequest(host: "search.openfoodfacts.org", path: "/search", queryItems: [
-            URLQueryItem(name: "q", value: request.query),
+        var items = [
+            URLQueryItem(name: "q", value: OFFSearchQuery.text(for: request.query, filters: request.filters)),
             URLQueryItem(name: "page", value: String(request.page)),
             URLQueryItem(name: "page_size", value: String(Self.pageSize)),
             URLQueryItem(name: "fields", value: Self.fields),
-        ])
+        ]
+        if request.page == 1 {
+            items.append(URLQueryItem(name: "facets", value: "brands_tags"))
+        }
+        return try Self.makeGETRequest(host: "search.openfoodfacts.org", path: "/search", queryItems: items)
     }
 
     /// Returns the product with barcode `code`, or `nil` when OFF doesn't have it or it has no usable nutrients.
@@ -100,6 +105,10 @@ nonisolated struct OpenFoodFactsClient: FoodSearchProvider {
     @concurrent
     static func parse(_ data: Data) async throws -> FoodSearchPage {
         let response = try JSONDecoder().decodeResponse(OFFSearchResponse.self, from: data)
-        return FoodSearchPage(foods: OFFMapper.foodItems(from: response), hasMore: response.hasMore)
+        return FoodSearchPage(
+            foods: OFFMapper.foodItems(from: response),
+            hasMore: response.hasMore,
+            brands: OFFMapper.brandOptions(from: response)
+        )
     }
 }

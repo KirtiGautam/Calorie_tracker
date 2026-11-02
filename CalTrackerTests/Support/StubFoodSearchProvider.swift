@@ -105,7 +105,7 @@ nonisolated final class StubFoodSearchProvider: FoodSearchProvider {
     }
 
     /// Finishes the suspended search for `query` and `page` with `foods`, saying whether more pages follow.
-    func resolve(_ query: String, page: Int = 1, foods: [FoodItem], hasMore: Bool = false) {
-        resolve(query, page: page, with: .success(FoodSearchPage(foods: foods, hasMore: hasMore)))
+    func resolve(_ query: String, page: Int = 1, foods: [FoodItem], hasMore: Bool = false, brands: [BrandOption] = []) {
+        resolve(query, page: page, with: .success(FoodSearchPage(foods: foods, hasMore: hasMore, brands: brands)))
     }
 }

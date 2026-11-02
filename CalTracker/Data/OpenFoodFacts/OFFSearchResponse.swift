@@ -9,10 +9,24 @@ nonisolated struct OFFSearchResponse: Decodable, Sendable {
     /// How many pages of results there are.
     let pageCount: Int?
 
+    /// The most common brand tags for the query and filters, when facets were requested.
+    ///
+    /// It can include OFF's `--other--` bucket, which counts every remaining brand.
+    let brandFacets: [FacetItem]
+
     private enum CodingKeys: String, CodingKey {
         case products = "hits"
         case page
         case pageCount = "page_count"
+        case facets
+    }
+
+    private enum FacetsKeys: String, CodingKey {
+        case brandsTags = "brands_tags"
+    }
+
+    private enum FacetKeys: String, CodingKey {
+        case items
     }
 
     init(from decoder: any Decoder) throws {
@@ -20,12 +34,27 @@ nonisolated struct OFFSearchResponse: Decodable, Sendable {
         products = try container.decodeIfPresent([Product].self, forKey: .products) ?? []
         page = try? container.decodeIfPresent(Int.self, forKey: .page)
         pageCount = try? container.decodeIfPresent(Int.self, forKey: .pageCount)
+        // Facets are optional extras, so a missing or unexpected shape just means no brands.
+        let brands = try? container
+            .nestedContainer(keyedBy: FacetsKeys.self, forKey: .facets)
+            .nestedContainer(keyedBy: FacetKeys.self, forKey: .brandsTags)
+            .decodeIfPresent([FacetItem].self, forKey: .items)
+        brandFacets = brands ?? []
     }
 
     /// Whether there's a page after this one. `false` when the response doesn't say.
     var hasMore: Bool {
         guard let page, let pageCount else { return false }
         return page < pageCount
+    }
+
+    /// One bucket of a facet: a tag and how many products have it.
+    struct FacetItem: Decodable, Sendable {
+        /// The tag, such as "lay-s", or `--other--` for the remaining brands.
+        let key: String
+
+        /// How many matching products have this tag.
+        let count: Int?
     }
 
     /// One product in the search results.

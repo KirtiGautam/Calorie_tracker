@@ -6,6 +6,8 @@ struct FoodSearchViewModelTests {
     private let banana = FoodItem.fixture(id: "usda-1", name: "Banana")
     private let bun = FoodItem.fixture(id: "usda-2", name: "Bun")
     private let biscuits = (1...4).map { FoodItem.fixture(id: "off-\($0)", name: "Biscuit \($0)", source: .openFoodFacts) }
+    private let parle = BrandOption(tag: "parle", name: "Parle")
+    private let isolated = IsolatedDefaults()
 
     @Test func movesFromLoadingToLoaded() async throws {
         let usda = StubFoodSearchProvider.controlled()
@@ -205,6 +207,136 @@ struct FoodSearchViewModelTests {
         #expect(results.cursor.openFoodFacts == 2, "The page that didn't load is asked for again next time")
     }
 
+    // MARK: - Filters
+
+    @Test func startsFromTheSavedCountryFilter() {
+        SearchPreferencesStore(defaults: isolated.defaults).save(regionFilterEnabled: true, regionCode: "IN")
+
+        let viewModel = makeViewModel(usda: StubFoodSearchProvider(foods: []), openFoodFacts: StubFoodSearchProvider(foods: []))
+
+        #expect(viewModel.filters == FoodSearchFilters(regionEnabled: true, regionCode: "IN"))
+    }
+
+    @Test func aFilterChangeSearchesAgainWithoutTheDebounce() async {
+        let openFoodFacts = StubFoodSearchProvider(foods: [])
+        let viewModel = makeViewModel(
+            usda: StubFoodSearchProvider(foods: []),
+            openFoodFacts: openFoodFacts,
+            debounce: .seconds(60)
+        )
+
+        viewModel.applyFilters(FoodSearchFilters(regionEnabled: true, regionCode: "IN"))
+        #expect(viewModel.filtersRevision == 1)
+        // A 60 second debounce would time the test out, so finishing at all shows it was skipped.
+        await viewModel.search("biscuit")
+
+        #expect(openFoodFacts.requests.map(\.filters.activeRegionCode) == ["IN"])
+        #expect(viewModel.state.results.loadedValue != nil)
+    }
+
+    @Test func onlyTheFirstSearchAfterAFilterChangeSkipsTheDebounce() async {
+        let openFoodFacts = StubFoodSearchProvider(foods: [])
+        let viewModel = makeViewModel(
+            usda: StubFoodSearchProvider(foods: []),
+            openFoodFacts: openFoodFacts,
+            debounce: .seconds(60)
+        )
+        viewModel.applyFilters(FoodSearchFilters(brand: .name("Parle")))
+        await viewModel.search("biscuit")
+
+        let typing = Task { await viewModel.search("biscuits") }
+        typing.cancel()
+        await typing.value
+
+        #expect(openFoodFacts.receivedQueries == ["biscuit"])
+    }
+
+    @Test func aChangeThatDoesNotAffectResultsDoesNotSearchAgain() {
+        let viewModel = makeViewModel(usda: StubFoodSearchProvider(foods: []), openFoodFacts: StubFoodSearchProvider(foods: []))
+
+        viewModel.applyFilters(FoodSearchFilters(regionEnabled: false, regionCode: "GB"))
+
+        #expect(viewModel.filtersRevision == 0)
+        #expect(viewModel.filters.regionCode == "GB")
+    }
+
+    @Test func turningTheCountryFilterOnWithoutACountryLeavesItOff() {
+        let viewModel = makeViewModel(usda: StubFoodSearchProvider(foods: []), openFoodFacts: StubFoodSearchProvider(foods: []))
+
+        viewModel.applyFilters(FoodSearchFilters(regionEnabled: true, regionCode: nil))
+
+        #expect(viewModel.filters.regionEnabled == false)
+        #expect(viewModel.filtersRevision == 0)
+        #expect(SearchPreferencesStore(defaults: isolated.defaults).regionFilterEnabled == false)
+    }
+
+    @Test func savesTheCountrySetting() {
+        let viewModel = makeViewModel(usda: StubFoodSearchProvider(foods: []), openFoodFacts: StubFoodSearchProvider(foods: []))
+
+        viewModel.applyFilters(FoodSearchFilters(regionEnabled: true, regionCode: "IN", brand: .tag("parle", name: "Parle")))
+
+        let saved = SearchPreferencesStore(defaults: isolated.defaults)
+        #expect(saved.regionFilterEnabled)
+        #expect(saved.regionCode == "IN")
+        #expect(saved.filters.brand == nil, "The brand belongs to one query and isn't saved")
+    }
+
+    @Test func clearFiltersTurnsEverythingOffButKeepsTheCountry() {
+        let viewModel = makeViewModel(usda: StubFoodSearchProvider(foods: []), openFoodFacts: StubFoodSearchProvider(foods: []))
+        viewModel.applyFilters(FoodSearchFilters(regionEnabled: true, regionCode: "IN", brand: .name("Parle")))
+
+        viewModel.clearFilters()
+
+        #expect(viewModel.filters == FoodSearchFilters(regionEnabled: false, regionCode: "IN"))
+        #expect(viewModel.filters.isActive == false)
+        #expect(viewModel.filtersRevision == 2)
+    }
+
+    @Test func changingTheQueryClearsTheBrand() async {
+        let openFoodFacts = StubFoodSearchProvider(result: .success(FoodSearchPage(foods: biscuits, brands: [parle])))
+        let viewModel = makeViewModel(usda: StubFoodSearchProvider(foods: []), openFoodFacts: openFoodFacts)
+        await viewModel.search("biscuit")
+        viewModel.applyFilters(FoodSearchFilters(regionEnabled: true, regionCode: "IN", brand: parle.filter))
+        await viewModel.search("biscuit")
+
+        await viewModel.search("cookie")
+
+        #expect(viewModel.filters.brand == nil)
+        #expect(viewModel.filters.activeRegionCode == "IN", "Only the brand belongs to the query")
+        #expect(openFoodFacts.requests.map(\.filters.brand) == [nil, parle.filter, nil])
+    }
+
+    @Test func aBrandChosenBeforeAnySearchIsKeptForTheFirstOne() async {
+        let openFoodFacts = StubFoodSearchProvider(foods: [])
+        let viewModel = makeViewModel(usda: StubFoodSearchProvider(foods: []), openFoodFacts: openFoodFacts)
+
+        viewModel.applyFilters(FoodSearchFilters(brand: .name("Karachi Bakery")))
+        await viewModel.search("biscuit")
+
+        #expect(viewModel.filters.brand == .name("Karachi Bakery"))
+        #expect(openFoodFacts.requests.map(\.filters.brand) == [.name("Karachi Bakery")])
+    }
+
+    @Test func theBrandListIsKeptWhileABrandIsSelected() async {
+        let britannia = BrandOption(tag: "britannia", name: "Britannia")
+        let openFoodFacts = StubFoodSearchProvider.controlled()
+        let viewModel = makeViewModel(usda: StubFoodSearchProvider(foods: []), openFoodFacts: openFoodFacts)
+
+        async let first: Void = viewModel.search("biscuit")
+        await openFoodFacts.waitForRequest("biscuit")
+        openFoodFacts.resolve("biscuit", foods: biscuits, brands: [parle, britannia])
+        await first
+        #expect(viewModel.brandOptions == [parle, britannia])
+
+        viewModel.applyFilters(FoodSearchFilters(brand: parle.filter))
+        async let filtered: Void = viewModel.search("biscuit")
+        await openFoodFacts.waitForRequest("biscuit", occurrence: 2)
+        openFoodFacts.resolve("biscuit", foods: [biscuits[0]], brands: [parle])
+        await filtered
+
+        #expect(viewModel.brandOptions == [parle, britannia])
+    }
+
     // MARK: - Helpers
 
     /// Searches `query` and answers page 1 from `openFoodFacts` with two biscuits and more to come.
@@ -236,6 +368,7 @@ struct FoodSearchViewModelTests {
     ) -> FoodSearchViewModel {
         FoodSearchViewModel(
             foodSearch: CombinedFoodSearch(usda: usda, openFoodFacts: openFoodFacts),
+            preferences: SearchPreferencesStore(defaults: isolated.defaults),
             debounce: debounce
         )
     }

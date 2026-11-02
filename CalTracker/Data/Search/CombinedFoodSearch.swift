@@ -10,9 +10,10 @@ nonisolated struct CombinedFoodSearch: Sendable {
     ///
     /// A source whose cursor is `nil` has no more pages and isn't asked, which saves both APIs' rate limits.
     /// Each child task returns a `Result` rather than throwing, so a failure in one source never cancels the
-    /// other and partial results survive.
+    /// other and partial results survive. `filters` reach only Open Food Facts, so USDA whole foods always appear.
     func search(
         _ query: String,
+        filters: FoodSearchFilters = FoodSearchFilters(),
         cursor: FoodSearchCursor = .firstPage
     ) async -> FoodSearchBatch {
         await withTaskGroup(of: (FoodSource, Result<FoodSearchPage, any Error>).self) { group in
@@ -23,7 +24,7 @@ nonisolated struct CombinedFoodSearch: Sendable {
                 }
             }
             if let page = cursor.openFoodFacts {
-                let request = FoodSearchRequest(query: query, page: page)
+                let request = FoodSearchRequest(query: query, page: page, filters: filters)
                 group.addTask { [openFoodFacts] in
                     await (.openFoodFacts, Self.outcome(of: openFoodFacts, for: request))
                 }

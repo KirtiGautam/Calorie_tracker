@@ -92,6 +92,16 @@ struct FoodSearchResultsTests {
         #expect(emptyWithFailure.hasNoMatches == false)
     }
 
+    @Test func keepsOpenFoodFactsBrandsFromPageOne() {
+        let brands = [BrandOption(tag: "parle", name: "Parle")]
+        let results = FoodSearchResults(firstBatch: batch(
+            usda: .success(page([])),
+            off: .success(FoodSearchPage(foods: offFoods, brands: brands))
+        ))
+
+        #expect(results.brands == brands)
+    }
+
     private func page(_ foods: [FoodItem], hasMore: Bool = false) -> FoodSearchPage {
         FoodSearchPage(foods: foods, hasMore: hasMore)
     }

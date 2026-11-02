@@ -5,15 +5,24 @@ struct FoodSearchView: View {
     /// Called when the person picks a result.
     let onSelect: (FoodItem) -> Void
 
+    /// Called when the person taps Filters, with the view model the filters sheet applies its changes to.
+    let onShowFilters: (FoodSearchViewModel) -> Void
+
     @State private var viewModel: FoodSearchViewModel
     @State private var query = ""
 
     /// Whether the search field is active. It's closed on selection, because an active field outlives a pop to Today.
     @State private var isSearchPresented = false
 
-    init(viewModel: FoodSearchViewModel, onSelect: @escaping (FoodItem) -> Void) {
+    /// Creates the screen for `viewModel`, reporting picks to `onSelect` and Filters taps to `onShowFilters`.
+    init(
+        viewModel: FoodSearchViewModel,
+        onSelect: @escaping (FoodItem) -> Void,
+        onShowFilters: @escaping (FoodSearchViewModel) -> Void
+    ) {
         _viewModel = State(initialValue: viewModel)
         self.onSelect = onSelect
+        self.onShowFilters = onShowFilters
     }
 
     var body: some View {
@@ -40,7 +49,14 @@ struct FoodSearchView: View {
             }
         }
         .overlay {
-            FoodSearchStatusView(state: viewModel.state)
+            FoodSearchStatusView(
+                state: viewModel.state,
+                filtersActive: viewModel.filters.isActive,
+                onClearFilters: viewModel.clearFilters
+            )
+        }
+        .safeAreaBar(edge: .top) {
+            FoodSearchFilterBar(filters: viewModel.filters, onShowFilters: showFilters)
         }
         .navigationTitle(.searchTitle)
         .searchable(
@@ -50,7 +66,8 @@ struct FoodSearchView: View {
             prompt: .searchPrompt
         )
         .autocorrectionDisabled()
-        .task(id: query) {
+        // A filter change searches the same text again, so it's part of the identity.
+        .task(id: "\(viewModel.filtersRevision)|\(query)") {
             await viewModel.search(query)
         }
     }
@@ -59,10 +76,14 @@ struct FoodSearchView: View {
         isSearchPresented = false
         onSelect(food)
     }
+
+    private func showFilters() {
+        onShowFilters(viewModel)
+    }
 }
 
 #Preview {
     NavigationStack {
-        FoodSearchView(viewModel: AppDependencies.preview.makeSearchViewModel()) { _ in }
+        FoodSearchView(viewModel: AppDependencies.preview.makeSearchViewModel(), onSelect: { _ in }, onShowFilters: { _ in })
     }
 }
