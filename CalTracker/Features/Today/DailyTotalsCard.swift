@@ -4,7 +4,9 @@ import SwiftUI
 struct DailyTotalsCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    /// The day's totals.
     let totals: DailyTotals
+    /// The daily targets. A nutrient without one shows no progress bar.
     var targets = DailyTargets()
 
     /// The goal badge shown beside energy, or `nil` for none.

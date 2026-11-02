@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The cut, maintain or bulk choice that drives the calculator and the Today badge.
 struct GoalSection: View {
+    /// The goal being edited.
     @Binding var goal: WeightGoal
 
     var body: some View {

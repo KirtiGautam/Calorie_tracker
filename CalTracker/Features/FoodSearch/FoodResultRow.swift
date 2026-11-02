@@ -2,7 +2,9 @@ import SwiftUI
 
 /// A tappable search result showing the food's name, brand, source and energy per 100 g.
 struct FoodResultRow: View {
+    /// The food to show.
     let food: FoodItem
+    /// Called with `food` when the person taps the row.
     let onSelect: (FoodItem) -> Void
 
     var body: some View {

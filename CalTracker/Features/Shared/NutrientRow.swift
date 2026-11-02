@@ -2,8 +2,11 @@ import SwiftUI
 
 /// One nutrient's name and formatted amount, or "—" when it's unknown.
 struct NutrientRow: View {
+    /// The nutrient to name.
     let nutrient: Nutrient
+    /// The amount in the nutrient's unit, or `nil` when it's unknown.
     let amount: Double?
+    /// Whether some entries didn't report the nutrient, so the amount undercounts.
     var isPartial = false
 
     var body: some View {

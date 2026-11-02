@@ -55,7 +55,7 @@ If `iPhone Duo` isn't installed, pick another simulator from `xcrun simctl list 
 ## Conventions
 
 - **One type per file**, named after the type. Folders are organized by feature, and the test target mirrors the app's folders.
-- **Doc comments** (`///`) on every type and member, written in plain sentences. Add inline comments only where the reasoning isn't obvious. Match the density of the surrounding code.
+- **Doc comments** (`///`) on every type and member, written in plain sentences, including a view's inputs. Members that only implement a protocol requirement (documented on the protocol), `body`, `init(from:)`, and enum cases whose name says it all can go without. Add inline comments only where the reasoning isn't obvious. Match the density of the surrounding code.
 - **No force unwraps or force `try`.** Use `fatalError` with a clear message only for truly unrecoverable states (see `AppModelContainer`).
 - **Errors from user actions must reach the user.** Map them through `userMessage(for:)` and show an alert or inline message. Never just `print` them.
 - **Localization:** every user-facing string lives in `Resources/Localizable.xcstrings` with `extractionState: manual` and a translator comment. Views use the generated symbols (`Text(.todayTitle)`, `Button(.addFood, …)`), not string literals. For placeholders, use positional specifiers (`%1$@`) and describe each one in the comment.

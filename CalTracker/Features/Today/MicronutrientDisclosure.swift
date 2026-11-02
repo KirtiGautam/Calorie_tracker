@@ -2,6 +2,7 @@ import SwiftUI
 
 /// A collapsible list of today's micronutrient totals.
 struct MicronutrientDisclosure: View {
+    /// The day's totals.
     let totals: DailyTotals
 
     @State private var isExpanded = false

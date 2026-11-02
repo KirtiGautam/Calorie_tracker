@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The overlay shown over the results list when there's nothing to list yet.
 struct FoodSearchStatusView: View {
+    /// What the search screen shows.
     let state: FoodSearchState
 
     var body: some View {

@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The food's name, brand and source at the top of the log sheet.
 struct FoodSummaryHeader: View {
+    /// The food being logged.
     let food: FoodItem
 
     var body: some View {

@@ -2,6 +2,7 @@ import SwiftUI
 
 /// An inline note that one database couldn't answer, shown above the other's results.
 struct SourceFailureRow: View {
+    /// The database that failed, and why.
     let failure: SourceFailure
 
     var body: some View {
