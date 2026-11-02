@@ -2,7 +2,9 @@ import SwiftUI
 
 /// One quick-pick amount button.
 struct GramPresetButton: View {
+    /// The amount this button sets, in grams.
     let preset: Double
+    /// The amount being logged, in grams.
     @Binding var grams: Double
 
     var body: some View {

@@ -5,12 +5,18 @@ import SwiftUI
 /// Every state has its own shape as well as its own color: an outline when signed out, a spinner while
 /// syncing, a filled cloud when up to date, and a badge when the last sync failed.
 struct SyncStatusButton: View {
+    /// Where sync stands.
     let status: SyncStatus
+
+    /// Opens the account sheet.
     let action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        // The icon is the button's whole content rather than a Label's icon, because a toolbar draws a Label's icon
+        // in its own monochrome style, which drops the state colors and the spinner and badge overlays. The
+        // accessibility label gives VoiceOver and Voice Control its name.
         Button(action: action) {
             icon
                 .accessibilityHidden(true)

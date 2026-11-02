@@ -4,6 +4,7 @@ import SwiftUI
 struct GramPresetButtons: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    /// The amount being logged, in grams.
     @Binding var grams: Double
 
     var body: some View {

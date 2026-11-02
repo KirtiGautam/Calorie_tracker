@@ -2,8 +2,11 @@ import SwiftUI
 
 /// Rows for a list of nutrients, for use inside a `List` or `Form` section.
 struct NutrientTable: View {
+    /// The amounts to show.
     let profile: NutrientProfile
+    /// The nutrients to list, in order.
     var nutrients = Nutrient.allCases
+    /// The nutrients whose amounts undercount because some entries didn't report them.
     var partialNutrients: Set<Nutrient> = []
 
     var body: some View {

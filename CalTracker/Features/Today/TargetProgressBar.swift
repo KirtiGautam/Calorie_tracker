@@ -2,6 +2,7 @@ import SwiftUI
 
 /// A tinted bar toward a target, with a caption saying how far there is to go or how far over it is.
 struct TargetProgressBar: View {
+    /// The progress to show.
     let progress: TargetProgress
 
     var body: some View {

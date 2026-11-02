@@ -2,6 +2,7 @@ import SwiftUI
 
 /// One logged food with its amount and energy.
 struct LogEntryRow: View {
+    /// The logged food.
     let entry: FoodLogEntry
 
     var body: some View {

@@ -2,6 +2,7 @@ import SwiftUI
 
 /// A short-lived capsule confirming what was just logged.
 struct LogConfirmationBanner: View {
+    /// What was just logged.
     let loggedFood: LoggedFood
 
     var body: some View {
