@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.macros import Macros
 from app.schemas import UTCDatetime
 
 WeightGoal = Literal["cut", "maintain", "bulk"]
@@ -24,11 +25,9 @@ class GoalIn(BaseModel):
     effective_from: date
 
 
-class GoalPublic(BaseModel):
+class GoalPublic(Macros):
+    """A stored goal, with its targets in the `Macros` fields."""
+
     goal: WeightGoal
-    energy_kcal: float | None
-    protein_g: float | None
-    carbs_g: float | None
-    fat_g: float | None
     updated_at: datetime
     effective_from: date

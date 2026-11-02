@@ -14,9 +14,8 @@ from sqlmodel.sql.expression import SelectOfScalar
 from app.daily_logs.exceptions import InvalidCursor, TooManyFoods
 from app.daily_logs.models import DailyLog
 from app.daily_logs.schemas import MAX_FOODS_PER_DAY, LogChanges
-from app.users.models import AppUser
-
-MACRO_KEYS = ("energy_kcal", "protein_g", "carbs_g", "fat_g")
+from app.macros import MACRO_KEYS
+from app.users import service as users_service
 
 
 def merge_foods(
@@ -71,9 +70,7 @@ def apply_changes(
 
     # Locking the account serializes one person's pushes, so `updated_at` grows in commit order
     # and a pull can never move its cursor past a push that hasn't committed yet.
-    session.exec(
-        select(AppUser.id).where(AppUser.id == user_id).with_for_update()
-    ).one()
+    users_service.lock_account(session, user_id)
     # Each API replica has its own clock, and one running behind could stamp this push before a
     # change a pull has already passed. Staying after the account's latest change keeps every
     # cursor handed out so far behind this push, whatever the clocks say.

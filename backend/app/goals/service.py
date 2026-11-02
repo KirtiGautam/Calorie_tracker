@@ -6,7 +6,7 @@ from sqlmodel import Session, col, select
 from app.goals.exceptions import GoalNotFound, GoalOutdated, InvalidGoalDate
 from app.goals.models import UserGoal
 from app.goals.schemas import GoalIn
-from app.users.models import AppUser
+from app.users import service as users_service
 
 
 def current(session: Session, user_id: uuid.UUID) -> UserGoal | None:
@@ -50,9 +50,7 @@ def put(
     values = goal_in.model_dump(exclude={"updated_at", "effective_from"})
 
     # Locking the account serializes one person's saves, so two can't both add the same day.
-    session.exec(
-        select(AppUser.id).where(AppUser.id == user_id).with_for_update()
-    ).one()
+    users_service.lock_account(session, user_id)
     stored = current(session, user_id)
 
     if stored is None or goal_in.effective_from > stored.effective_from:

@@ -12,6 +12,7 @@ from app.daily_logs import service
 from app.daily_logs.exceptions import InvalidCursor
 from app.daily_logs.models import DailyLog
 from app.daily_logs.schemas import AddedFood, LogChanges, RemovedFood
+from app.macros import MACRO_KEYS
 from app.users.models import AppUser
 
 
@@ -122,7 +123,7 @@ def test_totals_sum_known_values_only() -> None:
 
 
 def test_totals_of_no_foods_are_unknown() -> None:
-    assert service.totals_for([]) == dict.fromkeys(service.MACRO_KEYS)
+    assert service.totals_for([]) == dict.fromkeys(MACRO_KEYS)
 
 
 def test_apply_changes_with_nothing_returns_nothing(session: Session) -> None:

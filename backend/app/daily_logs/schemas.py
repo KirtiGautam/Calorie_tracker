@@ -3,6 +3,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
+from app.macros import Macros
 from app.schemas import UTCDatetime
 
 MAX_CHANGES = 500
@@ -40,12 +41,10 @@ class LogChanges(BaseModel):
     removed: list[RemovedFood] = Field(default_factory=list, max_length=MAX_CHANGES)
 
 
-class DailyLogPublic(BaseModel):
+class DailyLogPublic(Macros):
+    """A stored day, with its totals in the `Macros` fields."""
+
     log_date: date
-    energy_kcal: float | None
-    protein_g: float | None
-    carbs_g: float | None
-    fat_g: float | None
     foods: list[LoggedFood]
     updated_at: datetime
 
