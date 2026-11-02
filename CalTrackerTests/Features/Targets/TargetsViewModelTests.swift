@@ -91,7 +91,7 @@ struct TargetsViewModelTests {
         viewModel.targets.protein = protein
 
         #expect(viewModel.isValid == false)
-        #expect(throws: LogFoodError.invalidAmount) {
+        #expect(throws: TargetsError.invalidTarget) {
             try viewModel.save()
         }
         #expect(store.targets.isEmpty)

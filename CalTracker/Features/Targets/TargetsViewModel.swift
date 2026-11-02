@@ -84,9 +84,9 @@ final class TargetsViewModel {
 
     /// Saves the goal and targets, and the measurements when they're complete.
     ///
-    /// - Throws: `LogFoodError.invalidAmount` when `isValid` is false, or the store's encoding error.
+    /// - Throws: `TargetsError.invalidTarget` when `isValid` is false, or the store's encoding error.
     func save() throws {
-        guard isValid else { throw LogFoodError.invalidAmount }
+        guard isValid else { throw TargetsError.invalidTarget }
         try store.save(targets: targets, bodyProfile: bodyProfile, goal: goal)
     }
 }

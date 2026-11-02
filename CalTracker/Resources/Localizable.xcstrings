@@ -385,6 +385,18 @@
         }
       }
     },
+    "errorInvalidTarget" : {
+      "comment" : "Error when the person tries to save a daily target that's zero, negative or not a number. Blank targets are allowed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter targets above 0, or leave them blank."
+          }
+        }
+      }
+    },
     "errorKeychain" : {
       "comment" : "Error when the Keychain refuses to save or remove the sign-in.",
       "extractionState" : "manual",

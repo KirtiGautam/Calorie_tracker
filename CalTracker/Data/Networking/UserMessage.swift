@@ -43,5 +43,11 @@ func userMessage(for error: any Error) -> LocalizedStringResource {
         }
     }
 
+    if let targetsError = error as? TargetsError {
+        return switch targetsError {
+        case .invalidTarget: .errorInvalidTarget
+        }
+    }
+
     return .errorGeneric
 }
