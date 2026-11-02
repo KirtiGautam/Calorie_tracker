@@ -181,6 +181,42 @@
         }
       }
     },
+    "anyBrandOption" : {
+      "comment" : "Option in the search filters sheet that turns the brand filter off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any Brand"
+          }
+        }
+      }
+    },
+    "brandFilterFooter" : {
+      "comment" : "Explanation below the brand filter in the search filters sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose one of the most common brands for this search, or type another. A typed brand replaces the one chosen above. USDA whole foods always appear."
+          }
+        }
+      }
+    },
+    "brandFilterSection" : {
+      "comment" : "Section header in the search filters sheet for the brand filter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brand"
+          }
+        }
+      }
+    },
     "calculateAction" : {
       "comment" : "Button that fills in suggested targets from the body measurements and goal.",
       "extractionState" : "manual",
@@ -206,13 +242,121 @@
       }
     },
     "cancelAction" : {
-      "comment" : "Button that closes the Log Food sheet without logging.",
+      "comment" : "Button that closes a sheet, such as Log Food or search filters, without saving its changes.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "clearFiltersAction" : {
+      "comment" : "Button shown when a filtered search finds nothing. It turns off the country and brand filters.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Filters"
+          }
+        }
+      }
+    },
+    "countryFilterFooter" : {
+      "comment" : "Explanation below the country filter in the search filters sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows only Open Food Facts products sold in this country. USDA whole foods always appear."
+          }
+        }
+      }
+    },
+    "countryFilterRow" : {
+      "comment" : "Row in the search filters sheet showing the chosen country. Tapping it opens the country list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Country"
+          }
+        }
+      }
+    },
+    "countryFilterSection" : {
+      "comment" : "Section header in the search filters sheet for the country filter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Country"
+          }
+        }
+      }
+    },
+    "countryFilterToggle" : {
+      "comment" : "Toggle in the search filters sheet that limits packaged products to one country.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter by Country"
+          }
+        }
+      }
+    },
+    "countryPickerAllSection" : {
+      "comment" : "Section header in the country list above every country, sorted by name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Countries"
+          }
+        }
+      }
+    },
+    "countryPickerCurrentSection" : {
+      "comment" : "Section header in the country list above the country the phone is set to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current Region"
+          }
+        }
+      }
+    },
+    "countryPickerPrompt" : {
+      "comment" : "Placeholder in the search field of the country list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search Countries"
+          }
+        }
+      }
+    },
+    "countryPickerTitle" : {
+      "comment" : "Title of the list for choosing which country to filter search results by.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Country"
           }
         }
       }
@@ -278,7 +422,7 @@
       }
     },
     "doneAction" : {
-      "comment" : "Button that closes the account sheet.",
+      "comment" : "Button that closes a sheet, such as the account sheet, or applies the search filters.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1045,6 +1189,18 @@
         }
       }
     },
+    "otherBrandField" : {
+      "comment" : "Placeholder of the text field in the search filters sheet for typing a brand that isn’t listed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other Brand"
+          }
+        }
+      }
+    },
     "partialLabel" : {
       "comment" : "Shown under a total when some logged foods didn't report that nutrient, so the total undercounts.",
       "extractionState" : "manual",
@@ -1161,6 +1317,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search Unavailable"
+          }
+        }
+      }
+    },
+    "searchFilteredEmptyMessage" : {
+      "comment" : "Message shown when a filtered search finds nothing. %1$@ is the search text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matched “%1$@” with the country or brand filter on."
+          }
+        }
+      }
+    },
+    "searchFilteredEmptyTitle" : {
+      "comment" : "Title shown when a filtered search finds nothing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Results with These Filters"
+          }
+        }
+      }
+    },
+    "searchFiltersAction" : {
+      "comment" : "Button above the search results that opens the country and brand filters. The active country and brand follow it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filters"
+          }
+        }
+      }
+    },
+    "searchFiltersTitle" : {
+      "comment" : "Title of the sheet for filtering search results by country and brand.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filters"
           }
         }
       }

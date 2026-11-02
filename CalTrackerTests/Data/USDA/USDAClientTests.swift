@@ -17,6 +17,19 @@ struct USDAClientTests {
         #expect(json["query"] as? String == "oats")
     }
 
+    @Test func searchIgnoresFilters() throws {
+        let filters = FoodSearchFilters(regionEnabled: true, regionCode: "IN", brand: .name("Parle"))
+        let plain = try client(MockHTTPClient(data: Data())).makeRequest(for: FoodSearchRequest(query: "oats"))
+        let filtered = try client(MockHTTPClient(data: Data())).makeRequest(for: FoodSearchRequest(query: "oats", filters: filters))
+
+        let plainBody = try #require(plain.httpBody)
+        let filteredBody = try #require(filtered.httpBody)
+        // JSONEncoder doesn't promise a key order, so the bodies are compared as objects.
+        let plainJSON = try #require(try JSONSerialization.jsonObject(with: plainBody) as? NSDictionary)
+        let filteredJSON = try #require(try JSONSerialization.jsonObject(with: filteredBody) as? NSDictionary)
+        #expect(plainJSON == filteredJSON)
+    }
+
     @Test func searchReportsMorePagesUntilTheLast() async throws {
         let http = MockHTTPClient(data: try FixtureLoader.data(named: "usda_search_page"))
 
@@ -24,6 +37,7 @@ struct USDAClientTests {
 
         #expect(page.hasMore)
         #expect(page.foods.count == 2)
+        #expect(page.brands.isEmpty)
     }
 
     @Test func searchReportsNoMorePagesOnTheLastPage() async throws {

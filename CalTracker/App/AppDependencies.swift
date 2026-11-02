@@ -12,18 +12,18 @@ struct AppDependencies {
     /// The person's daily targets and goal.
     let targets: TargetsStore
 
+    /// The saved search country filter.
+    let searchPreferences: SearchPreferencesStore
+
     /// The optional Gramwise account.
     let account: AccountSession
 
     /// Backs the log and goal up to the account and restores them.
     let sync: SyncEngine
 
-    /// How long search waits after the last keystroke.
-    var searchDebounce: Duration = FoodSearchViewModel.defaultDebounce
-
     /// Creates a view model for the food search screen.
     func makeSearchViewModel() -> FoodSearchViewModel {
-        FoodSearchViewModel(foodSearch: foodSearch, debounce: searchDebounce)
+        FoodSearchViewModel(foodSearch: foodSearch, preferences: searchPreferences)
     }
 
     /// Creates a view model for logging `food`.
@@ -72,6 +72,7 @@ struct AppDependencies {
             foodSearch: CombinedFoodSearch(usda: usda, openFoodFacts: openFoodFacts),
             foodLog: foodLog,
             targets: targets,
+            searchPreferences: SearchPreferencesStore(defaults: defaults),
             account: account,
             sync: sync
         )

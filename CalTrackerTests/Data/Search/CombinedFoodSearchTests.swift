@@ -103,6 +103,18 @@ struct CombinedFoodSearchTests {
         #expect(try batch.openFoodFacts?.get().foods.map(\.id) == ["off-1"])
     }
 
+    @Test func filtersReachOnlyOpenFoodFacts() async {
+        let usda = StubFoodSearchProvider(foods: [])
+        let openFoodFacts = StubFoodSearchProvider(foods: [])
+        let search = CombinedFoodSearch(usda: usda, openFoodFacts: openFoodFacts)
+        let filters = FoodSearchFilters(regionEnabled: true, regionCode: "IN", brand: .name("Parle"))
+
+        _ = await search.search("biscuit", filters: filters)
+
+        #expect(usda.requests.map(\.filters) == [FoodSearchFilters()])
+        #expect(openFoodFacts.requests.map(\.filters) == [filters])
+    }
+
     @Test func percentEncodesCharactersServersRejectOrMisread() async throws {
         let usdaHTTP = MockHTTPClient(data: try FixtureLoader.data(named: "usda_search"))
         let offHTTP = MockHTTPClient(data: try FixtureLoader.data(named: "off_search"))

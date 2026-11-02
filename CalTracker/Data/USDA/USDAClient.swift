@@ -20,7 +20,7 @@ nonisolated struct USDAClient: FoodSearchProvider {
         self.configuration = configuration
     }
 
-    /// Returns one page of whole foods.
+    /// Returns one page of whole foods. Filters are ignored: USDA data is US-only and has no brands among these data types.
     func search(_ request: FoodSearchRequest) async throws -> FoodSearchPage {
         let urlRequest = try makeRequest(for: request)
         let data = try await httpClient.validatedData(for: urlRequest)

@@ -7,6 +7,31 @@ nonisolated enum OFFMapper {
         response.products.compactMap(foodItem(from:))
     }
 
+    /// The facet bucket OFF uses for every brand outside the top ones. It isn't a brand, so it's skipped.
+    static let otherFacetKey = "--other--"
+
+    /// Returns the most common brands in `response`'s facets, in OFF's order.
+    ///
+    /// Each name is the brand as spelled by a product on this page with the same tag. When no product
+    /// matches, the name is the tag with hyphens turned into spaces and capitalized.
+    static func brandOptions(from response: OFFSearchResponse) -> [BrandOption] {
+        var spellings: [String: String] = [:]
+        for product in response.products {
+            for brand in brands(from: product.brands) {
+                let tag = OFFSearchQuery.tag(for: brand)
+                if spellings[tag] == nil {
+                    spellings[tag] = brand
+                }
+            }
+        }
+
+        return response.brandFacets.compactMap { item in
+            guard item.key != otherFacetKey, item.key.isEmpty == false else { return nil }
+            let name = spellings[item.key] ?? item.key.replacing("-", with: " ").capitalized
+            return BrandOption(tag: item.key, name: name)
+        }
+    }
+
     /// Returns a food for `product`, or `nil` when it lacks a code, a name or a plausible energy value.
     static func foodItem(from product: OFFSearchResponse.Product) -> FoodItem? {
         guard
@@ -73,11 +98,14 @@ nonisolated enum OFFMapper {
 
     /// Returns the first brand in OFF's comma-separated `brands` field.
     private static func primaryBrand(from brands: String?) -> String? {
-        let first = brands?
+        self.brands(from: brands).first
+    }
+
+    /// Returns the non-empty brands in OFF's comma-separated `brands` field, in order.
+    private static func brands(from brands: String?) -> [String] {
+        (brands ?? "")
             .split(separator: ",")
-            .first?
-            .trimmingCharacters(in: .whitespaces)
-        guard let first, first.isEmpty == false else { return nil }
-        return first
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { $0.isEmpty == false }
     }
 }
