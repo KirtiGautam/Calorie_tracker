@@ -8,7 +8,7 @@ Everything runs in Docker, so the only thing to install is Docker with Compose.
 
 ```sh
 cp .env.example .env        # then fill in DATABASE_URL and JWT_SECRET (openssl rand -hex 32)
-./scripts/bootstrap_db.sh   # optional: runs db/bootstrap.sql against Supabase with psql from the postgres image
+./scripts/bootstrap_db.sh   # optional: runs db/bootstrap.sql against Supabase with psql, in the compose `bootstrap` service
 ```
 
 Every setting comes from `.env`. Compose passes it to the containers with `env_file`, and it's never copied into an image. Outside `development`, the API refuses to start with a `JWT_SECRET` that is `changethis` or shorter than 32 bytes.
@@ -28,7 +28,7 @@ Migrations run once, in their own container, never inside the API's workers. To 
 
 ### Migrations
 
-Every schema change is a plain SQL file in `migrations/`, named `NNNN_slug.sql` (`0003_add_meal_names.sql`). `migrations/migrate.py` only runs them: it applies each file that hasn't run yet, in number order and in its own transaction, then records its name and SHA-256 in `schema_migration`. A failed file rolls back completely and stops the run, and the API doesn't start.
+Every schema change is a plain SQL file in `migrations/`, named `NNNN_slug.sql` (`0004_add_meal_names.sql`). `migrations/migrate.py` only runs them: it applies each file that hasn't run yet, in number order and in its own transaction, then records its name and SHA-256 in `schema_migration`. A failed file rolls back completely and stops the run, and the API doesn't start.
 
 - **To change the schema,** add the next numbered file, and update the SQLModel models to match. Tests build their SQLite tables from the models, not from these files.
 - **Never edit a file that has run.** The runner compares checksums and refuses to continue. Migrations are forward-only, so to undo a change, add a new file that reverses it.

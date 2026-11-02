@@ -12,16 +12,16 @@ os.environ["JWT_SECRET"] = "test-secret-that-is-long-enough-for-hs256-0123456789
 os.environ["ACCESS_TOKEN_MINUTES"] = "30"
 os.environ["REFRESH_TOKEN_DAYS"] = "60"
 
-import pytest  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import Engine, event  # noqa: E402
-from sqlalchemy.pool import StaticPool  # noqa: E402
-from sqlmodel import Session, SQLModel, create_engine  # noqa: E402
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import Engine, event
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
 
-from app.database import get_session  # noqa: E402
+from app.database import get_session
 
 # Importing the app registers every table model, through the routers, for create_all.
-from app.main import app  # noqa: E402
+from app.main import app
 
 
 @pytest.fixture
