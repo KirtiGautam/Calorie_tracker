@@ -8,10 +8,10 @@ Everything runs in Docker, so the only thing to install is Docker with Compose.
 
 ```sh
 cp .env.example .env        # then fill in DATABASE_URL and JWT_SECRET (openssl rand -hex 32)
-./scripts/bootstrap_db.sh   # optional: runs db/bootstrap.sql against Supabase with psql from the postgres image
+./scripts/bootstrap_db.sh   # optional: runs db/bootstrap.sql against Supabase with psql, in the compose `bootstrap` service
 ```
 
-Every setting comes from `.env`. Compose passes it to the containers with `env_file`, and it's never copied into an image.
+Every setting comes from `.env`. Compose passes it to the containers with `env_file`, and it's never copied into an image. Outside `development`, the API refuses to start with a `JWT_SECRET` that is `changethis` or shorter than 32 bytes.
 
 ## Run
 
@@ -28,7 +28,7 @@ Migrations run once, in their own container, never inside the API's workers. To 
 
 ### Migrations
 
-Every schema change is a plain SQL file in `migrations/`, named `NNNN_slug.sql` (`0003_add_meal_names.sql`). `migrations/migrate.py` only runs them: it applies each file that hasn't run yet, in number order and in its own transaction, then records its name and SHA-256 in `schema_migration`. A failed file rolls back completely and stops the run, and the API doesn't start.
+Every schema change is a plain SQL file in `migrations/`, named `NNNN_slug.sql` (`0004_add_meal_names.sql`). `migrations/migrate.py` only runs them: it applies each file that hasn't run yet, in number order and in its own transaction, then records its name and SHA-256 in `schema_migration`. A failed file rolls back completely and stops the run, and the API doesn't start.
 
 - **To change the schema,** add the next numbered file, and update the SQLModel models to match. Tests build their SQLite tables from the models, not from these files.
 - **Never edit a file that has run.** The runner compares checksums and refuses to continue. Migrations are forward-only, so to undo a change, add a new file that reverses it.
@@ -52,7 +52,7 @@ Every route except `/health` and `/auth/*` needs `Authorization: Bearer <access_
 
 A `user_goal` row holds the goal from its `effective_from` day (the day it was saved, on the device that saved it) until the next row's day, so changing the goal never changes what earlier days were measured against. A PUT for a later day than the current goal adds a row. One for the same day replaces that day's goal when its `updated_at` is newer, and resending the stored goal returns it unchanged. Anything older (an earlier day, or an earlier save the same day) returns 409 `goal_outdated`, because past days' goals can't change. `effective_from` must be `updated_at`'s day in some time zone (within a day of its UTC date), or the PUT returns 422 `invalid_goal_date`. `updated_at` is capped at the server's clock.
 
-A `daily_log` row holds one day's foods as a JSONB list. Each item carries `entry_id`, `food_id` (`usda-…` or `off-…`), `name`, `grams`, `logged_at` and the macros for the amount eaten (`energy_kcal`, `protein_g`, `carbs_g`, `fat_g`, `null` when unknown). The server recomputes the day's totals from them on every change. A day whose foods were all removed stays, with `foods: []`, so the removal reaches other devices.
+A `daily_log` row holds one day's foods as a JSONB list. Each item carries `entry_id`, `food_id` (`usda-…` or `off-…`), `name`, `grams`, `logged_at` (stored and returned in UTC) and the macros for the amount eaten (`energy_kcal`, `protein_g`, `carbs_g`, `fat_g`, `null` when unknown). The server recomputes the day's totals from them on every change. A day whose foods were all removed stays, with `foods: []`, so the removal reaches other devices.
 
 ## Check
 

@@ -4,14 +4,14 @@ from fastapi import APIRouter, status
 
 from app.auth.dependencies import CurrentUserDep
 from app.database import SessionDep
-from app.exceptions import ErrorEnvelope
+from app.exceptions import error_responses
 from app.users import service
 from app.users.schemas import UserPublic
 
 router = APIRouter(
     prefix="/me",
     tags=["users"],
-    responses={status.HTTP_401_UNAUTHORIZED: {"model": ErrorEnvelope}},
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED),
 )
 
 
