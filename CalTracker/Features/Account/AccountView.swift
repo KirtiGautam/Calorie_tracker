@@ -5,8 +5,8 @@ struct AccountView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel: AccountViewModel
-    @State private var isConfirmingDeletion = false
 
+    /// Creates the sheet for `viewModel`.
     init(viewModel: AccountViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
@@ -15,9 +15,14 @@ struct AccountView: View {
         NavigationStack {
             Form {
                 if let email = viewModel.signedInEmail {
-                    signedInSections(email: email)
+                    AccountSignedInSections(
+                        email: email,
+                        viewModel: viewModel,
+                        onSignOut: signOut,
+                        onDeleteAccount: deleteAccount
+                    )
                 } else {
-                    signedOutSections
+                    AccountSignedOutForm(viewModel: viewModel, onSubmit: submit)
                 }
             }
             .navigationTitle(.accountTitle)
@@ -28,132 +33,11 @@ struct AccountView: View {
                 }
             }
             .disabled(viewModel.isWorking)
-            .confirmationDialog(.deleteAccountConfirmTitle, isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
-                Button(.deleteAccountAction, role: .destructive, action: deleteAccount)
-            } message: {
-                Text(.deleteAccountConfirmMessage)
-            }
         }
     }
 
-    // MARK: - Signed out
-
-    @ViewBuilder
-    private var signedOutSections: some View {
-        Section {
-            Picker(.accountModeField, selection: $viewModel.mode) {
-                ForEach(AccountFormMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
-        } footer: {
-            Text(.accountSignedOutFooter)
-        }
-
-        Section {
-            TextField(.emailField, text: $viewModel.email)
-                .textContentType(.username)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-            SecureField(.passwordField, text: $viewModel.password)
-                .textContentType(viewModel.mode == .createAccount ? .newPassword : .password)
-                .onSubmit(submit)
-        } footer: {
-            if viewModel.mode == .createAccount {
-                Text(.passwordRequirement(AccountViewModel.minimumPasswordLength))
-            }
-        }
-
-        errorSection
-
-        Section {
-            Button(action: submit) {
-                Text(viewModel.mode.submitTitle)
-                    .frame(maxWidth: .infinity)
-                    // An overlay keeps the title centered while the spinner shows.
-                    .overlay(alignment: .trailing) {
-                        if viewModel.isWorking {
-                            ProgressView()
-                        }
-                    }
-            }
-            .disabled(viewModel.canSubmit == false)
-        }
-    }
-
-    // MARK: - Signed in
-
-    @ViewBuilder
-    private func signedInSections(email: String) -> some View {
-        Section {
-            LabeledContent {
-                Text(email)
-            } label: {
-                Text(.emailField)
-            }
-            LabeledContent {
-                if let lastSyncedAt = viewModel.lastSyncedAt {
-                    Text(lastSyncedAt, format: .relative(presentation: .named))
-                } else {
-                    Text(.lastSyncNever)
-                }
-            } label: {
-                Text(.lastSyncLabel)
-            }
-            if case .failed(let message) = viewModel.syncStatus {
-                Label {
-                    Text(message)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                }
-            }
-            Button(action: viewModel.syncNow) {
-                HStack {
-                    Text(.syncNowAction)
-                    if viewModel.syncStatus == .syncing {
-                        Spacer()
-                        ProgressView()
-                    }
-                }
-            }
-            .disabled(viewModel.syncStatus == .syncing)
-        } footer: {
-            Text(.syncFooter)
-        }
-
-        errorSection
-
-        Section {
-            Button(.signOutAction, action: signOut)
-        } footer: {
-            Text(.signOutFooter)
-        }
-
-        Section {
-            Button(.deleteAccountAction, role: .destructive) {
-                isConfirmingDeletion = true
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var errorSection: some View {
-        if let errorMessage = viewModel.errorMessage {
-            Section {
-                Label {
-                    Text(errorMessage)
-                } icon: {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundStyle(.red)
-                }
-            }
-        }
-    }
+    // Account requests run in their own tasks rather than the view's, so closing the sheet doesn't abandon a sign-up,
+    // sign-out or deletion the server may already have carried out.
 
     private func submit() {
         Task {

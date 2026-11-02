@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The measurements the calculator uses, with the button that fills in suggested targets.
 struct BodyProfileSection: View {
+    /// The draft the fields edit.
     @Bindable var viewModel: TargetsViewModel
 
     var body: some View {
@@ -15,35 +16,9 @@ struct BodyProfileSection: View {
                 Text(.sexField)
             }
 
-            LabeledContent {
-                TextField(value: $viewModel.age, format: .number) {
-                    Text(.ageField)
-                }
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-            } label: {
-                Text(.ageField)
-            }
-
-            LabeledContent {
-                TextField(value: $viewModel.heightCentimetres, format: .number) {
-                    Text(.heightField)
-                }
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-            } label: {
-                Text(.heightField)
-            }
-
-            LabeledContent {
-                TextField(value: $viewModel.weightKilograms, format: .number) {
-                    Text(.weightField)
-                }
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-            } label: {
-                Text(.weightField)
-            }
+            NumberFieldRow(.ageField, value: $viewModel.age, format: .number, keyboard: .numberPad)
+            NumberFieldRow(.heightField, value: $viewModel.heightCentimetres, format: .number)
+            NumberFieldRow(.weightField, value: $viewModel.weightKilograms, format: .number)
 
             Picker(selection: $viewModel.activity) {
                 ForEach(ActivityLevel.allCases) { option in

@@ -135,10 +135,7 @@ struct TodayLogList: View {
                 swipe(value.translation, navigation: navigation)
             }
         )
-        .alert(.deleteFailedTitle, item: $failureMessage) { _ in
-        } message: { message in
-            Text(message)
-        }
+        .errorAlert(.deleteFailedTitle, message: $failureMessage)
     }
 
     /// Steps to the previous or next day for a mostly horizontal swipe, following the reading direction.
