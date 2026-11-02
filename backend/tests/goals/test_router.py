@@ -192,6 +192,20 @@ def test_put_rejects_naive_timestamp_unknown_goal_and_missing_date(
     assert missing.status_code == 422
 
 
+def test_put_rejects_timestamp_out_of_range_in_utc(api: TestClient) -> None:
+    headers = bearer(signup(api))
+
+    # Before year 1 once converted to UTC, which used to fail with a 500.
+    response = api.put(
+        "/me/goal",
+        headers=headers,
+        json=goal("0001-01-01T00:00:00+14:00", "0001-01-01"),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+
+
 def test_goals_are_per_user(api: TestClient) -> None:
     ada = bearer(signup(api, "ada@example.com"))
     bob = bearer(signup(api, "bob@example.com"))
