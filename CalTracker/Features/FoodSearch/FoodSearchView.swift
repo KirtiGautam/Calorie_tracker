@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Searches both food databases and reports the chosen food.
+/// Searches both food databases, loads more results as the person scrolls, and reports the chosen food.
 struct FoodSearchView: View {
     /// Called when the person picks a result.
     let onSelect: (FoodItem) -> Void
@@ -27,6 +27,14 @@ struct FoodSearchView: View {
                 Section {
                     ForEach(results.foods) { food in
                         FoodResultRow(food: food, onSelect: select)
+                    }
+                    if results.canLoadMore {
+                        LoadMoreRow(
+                            paging: viewModel.state.paging,
+                            cursor: results.cursor,
+                            onLoad: viewModel.loadMore,
+                            onRetry: viewModel.retryLoadMore
+                        )
                     }
                 }
             }

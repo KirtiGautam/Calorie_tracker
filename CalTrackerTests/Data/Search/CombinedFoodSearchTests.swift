@@ -9,10 +9,11 @@ struct CombinedFoodSearchTests {
         let offHTTP = MockHTTPClient(data: try FixtureLoader.data(named: "off_search"))
         let search = makeSearch(usdaHTTP: usdaHTTP, offHTTP: offHTTP)
 
-        let results = await search.search("banana")
+        let batch = await search.search("banana")
 
-        #expect(try results.usda.get().count == 2)
-        #expect(try results.openFoodFacts.get().count == 2)
+        #expect(try batch.usda?.get().foods.count == 2)
+        #expect(try batch.openFoodFacts?.get().foods.count == 2)
+        let results = FoodSearchResults(firstBatch: batch)
         #expect(results.errorIfAllFailed == nil)
         #expect(results.hasNoMatches == false)
     }
@@ -22,11 +23,11 @@ struct CombinedFoodSearchTests {
         let offHTTP = MockHTTPClient(data: try FixtureLoader.data(named: "off_search"))
         let search = makeSearch(usdaHTTP: usdaHTTP, offHTTP: offHTTP)
 
-        let results = await search.search("nutella")
+        let batch = await search.search("nutella")
 
-        #expect(throws: URLError(.notConnectedToInternet)) { try results.usda.get() }
-        #expect(try results.openFoodFacts.get().map(\.name) == ["Nutella", "Oat Biscuits"])
-        #expect(results.errorIfAllFailed == nil)
+        #expect(throws: URLError(.notConnectedToInternet)) { try batch.usda?.get() }
+        #expect(try batch.openFoodFacts?.get().foods.map(\.name) == ["Nutella", "Oat Biscuits"])
+        #expect(FoodSearchResults(firstBatch: batch).errorIfAllFailed == nil)
     }
 
     @Test func reportsRateLimitingAsAnAPIError() async throws {
@@ -34,10 +35,10 @@ struct CombinedFoodSearchTests {
         let offHTTP = MockHTTPClient(data: Data(), statusCode: 429)
         let search = makeSearch(usdaHTTP: usdaHTTP, offHTTP: offHTTP)
 
-        let results = await search.search("nutella")
+        let batch = await search.search("nutella")
 
-        #expect(throws: APIError.rateLimited) { try results.openFoodFacts.get() }
-        #expect(try results.usda.get().isEmpty == false)
+        #expect(throws: APIError.rateLimited) { try batch.openFoodFacts?.get() }
+        #expect(try batch.usda?.get().foods.isEmpty == false)
     }
 
     @Test func reportsTheFirstErrorWhenEverySourceFails() async {
@@ -46,10 +47,10 @@ struct CombinedFoodSearchTests {
             offHTTP: MockHTTPClient(data: Data("not json".utf8))
         )
 
-        let results = await search.search("banana")
+        let batch = await search.search("banana")
 
-        #expect(results.errorIfAllFailed is URLError)
-        #expect(throws: APIError.decoding) { try results.openFoodFacts.get() }
+        #expect(FoodSearchResults(firstBatch: batch).errorIfAllFailed is URLError)
+        #expect(throws: APIError.decoding) { try batch.openFoodFacts?.get() }
     }
 
     @Test func sendsTheRequiredHeadersAndQueryParameters() async throws {
@@ -64,6 +65,7 @@ struct CombinedFoodSearchTests {
         let offItems = try queryItems(of: offRequest)
         #expect(offRequest.url?.host() == "search.openfoodfacts.org")
         #expect(offItems["q"] == "rolled oats")
+        #expect(offItems["page"] == "1")
         #expect(offItems["page_size"] == "20")
         #expect(offItems["fields"] == "code,product_name,brands,nutriments")
 
@@ -75,6 +77,30 @@ struct CombinedFoodSearchTests {
         #expect(usdaBody["query"] as? String == "rolled oats")
         #expect(usdaBody["dataType"] as? [String] == ["Foundation", "SR Legacy", "Survey (FNDDS)"])
         #expect(usdaBody["pageSize"] as? Int == 20)
+        #expect(usdaBody["pageNumber"] as? Int == 1)
+    }
+
+    @Test func asksEachSourceForItsOwnNextPage() async {
+        let usda = StubFoodSearchProvider(foods: [])
+        let openFoodFacts = StubFoodSearchProvider(foods: [])
+        let search = CombinedFoodSearch(usda: usda, openFoodFacts: openFoodFacts)
+
+        _ = await search.search("biscuit", cursor: FoodSearchCursor(usda: 3, openFoodFacts: 2))
+
+        #expect(usda.requests.map(\.page) == [3])
+        #expect(openFoodFacts.requests.map(\.page) == [2])
+    }
+
+    @Test func doesNotAskASourceThatHasNoMorePages() async throws {
+        let usda = StubFoodSearchProvider(foods: [])
+        let openFoodFacts = StubFoodSearchProvider(foods: [.fixture(id: "off-1", source: .openFoodFacts)])
+        let search = CombinedFoodSearch(usda: usda, openFoodFacts: openFoodFacts)
+
+        let batch = await search.search("biscuit", cursor: FoodSearchCursor(usda: nil, openFoodFacts: 2))
+
+        #expect(usda.requests.isEmpty)
+        #expect(batch.usda == nil)
+        #expect(try batch.openFoodFacts?.get().foods.map(\.id) == ["off-1"])
     }
 
     @Test func percentEncodesCharactersServersRejectOrMisread() async throws {

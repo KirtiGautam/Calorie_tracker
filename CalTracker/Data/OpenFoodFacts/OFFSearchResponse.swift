@@ -3,18 +3,29 @@ nonisolated struct OFFSearchResponse: Decodable, Sendable {
     /// The matching products.
     let products: [Product]
 
+    /// The page these products are on, starting at 1.
+    let page: Int?
+
+    /// How many pages of results there are.
+    let pageCount: Int?
+
     private enum CodingKeys: String, CodingKey {
         case products = "hits"
-    }
-
-    /// Creates a response from already-decoded products.
-    init(products: [Product]) {
-        self.products = products
+        case page
+        case pageCount = "page_count"
     }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         products = try container.decodeIfPresent([Product].self, forKey: .products) ?? []
+        page = try? container.decodeIfPresent(Int.self, forKey: .page)
+        pageCount = try? container.decodeIfPresent(Int.self, forKey: .pageCount)
+    }
+
+    /// Whether there's a page after this one. `false` when the response doesn't say.
+    var hasMore: Bool {
+        guard let page, let pageCount else { return false }
+        return page < pageCount
     }
 
     /// One product in the search results.

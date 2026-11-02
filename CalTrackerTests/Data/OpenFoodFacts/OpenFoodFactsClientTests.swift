@@ -4,6 +4,39 @@ import Testing
 
 @Suite(.tags(.networking))
 struct OpenFoodFactsClientTests {
+    @Test func searchRequestSendsThePage() throws {
+        let client = OpenFoodFactsClient(httpClient: MockHTTPClient(data: Data()))
+
+        let first = try queryItems(of: client.makeRequest(for: FoodSearchRequest(query: "biscuit", page: 1)))
+        let third = try queryItems(of: client.makeRequest(for: FoodSearchRequest(query: "biscuit", page: 3)))
+
+        #expect(first["page"] == "1")
+        #expect(third["page"] == "3")
+    }
+
+    @Test func searchReadsPaging() async throws {
+        let http = MockHTTPClient(data: try FixtureLoader.data(named: "off_search_page"))
+
+        let page = try await OpenFoodFactsClient(httpClient: http).search(FoodSearchRequest(query: "biscuit"))
+
+        #expect(page.hasMore)
+        #expect(page.foods.map(\.name) == ["Parle-G", "Good Day Cashew Cookies", "Fruit Biscuits"])
+    }
+
+    @Test func searchOnTheLastPageHasNoMore() async throws {
+        let http = MockHTTPClient(data: Data(#"{"hits": [], "page": 4, "page_count": 4}"#.utf8))
+
+        let page = try await OpenFoodFactsClient(httpClient: http).search(FoodSearchRequest(query: "biscuit", page: 4))
+
+        #expect(page.hasMore == false)
+    }
+
+    @Test func searchWithoutPagingFieldsHasNoMorePages() async throws {
+        let http = MockHTTPClient(data: try FixtureLoader.data(named: "off_search"))
+
+        #expect(try await OpenFoodFactsClient(httpClient: http).search(FoodSearchRequest(query: "nutella")).hasMore == false)
+    }
+
     @Test func productRequestUsesTheV2EndpointAndUserAgent() throws {
         let request = try OpenFoodFactsClient(httpClient: MockHTTPClient(data: Data())).makeProductRequest(code: "3017620422003")
 
@@ -43,5 +76,15 @@ struct OpenFoodFactsClientTests {
         let http = MockHTTPClient(data: Data(#"{"status": 0}"#.utf8), statusCode: 404)
 
         #expect(try await OpenFoodFactsClient(httpClient: http).product(code: "123") == nil)
+    }
+
+    private func queryItems(of request: URLRequest) throws -> [String: String] {
+        let url = try #require(request.url)
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        var items: [String: String] = [:]
+        for item in components.queryItems ?? [] {
+            items[item.name] = item.value
+        }
+        return items
     }
 }

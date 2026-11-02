@@ -5,4 +5,7 @@ struct FoodSearchState {
 
     /// The combined results for `query`.
     var results: Loadable<FoodSearchResults> = .idle
+
+    /// Whether the next page of `results` is loading or failed.
+    var paging = FoodSearchPaging.idle
 }

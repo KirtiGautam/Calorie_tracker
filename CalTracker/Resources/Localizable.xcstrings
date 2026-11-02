@@ -1189,6 +1189,18 @@
         }
       }
     },
+    "searchLoadingMore" : {
+      "comment" : "VoiceOver label of the spinner at the end of the search results while the next page loads.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading more results"
+          }
+        }
+      }
+    },
     "searchPrompt" : {
       "comment" : "Placeholder text in the food search field.",
       "extractionState" : "manual",
@@ -1509,6 +1521,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Today"
+          }
+        }
+      }
+    },
+    "tryAgainAction" : {
+      "comment" : "Button at the end of the search results that loads the next page again after it failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
           }
         }
       }

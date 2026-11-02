@@ -1,0 +1,51 @@
+{
+  "count": 70,
+  "page": 1,
+  "page_size": 20,
+  "page_count": 4,
+  "hits": [
+    {
+      "code": "8901719101038",
+      "product_name": "Parle-G",
+      "brands": ["Parle"],
+      "nutriments": {
+        "energy-kcal_100g": 454,
+        "proteins_100g": 6.9,
+        "carbohydrates_100g": 77.3,
+        "fat_100g": 13
+      }
+    },
+    {
+      "code": "8901063010697",
+      "product_name": "Good Day Cashew Cookies",
+      "brands": ["Britannia", "Good Day"],
+      "nutriments": {
+        "energy-kcal_100g": 519,
+        "proteins_100g": 7.2,
+        "carbohydrates_100g": 63,
+        "fat_100g": 26.3
+      }
+    },
+    {
+      "code": "8906009070170",
+      "product_name": "Fruit Biscuits",
+      "brands": ["Karachi Bakery"],
+      "nutriments": {
+        "energy-kcal_100g": 488
+      }
+    }
+  ],
+  "facets": {
+    "brands_tags": {
+      "name": "brands_tags",
+      "items": [
+        { "key": "britannia", "name": "britannia", "count": 93 },
+        { "key": "parle", "name": "parle", "count": 46 },
+        { "key": "sunfeast", "name": "sunfeast", "count": 34 },
+        { "key": "karachi-bakery", "name": "karachi-bakery", "count": 8 },
+        { "key": "--other--", "name": "--other--", "count": 152 }
+      ],
+      "count_error_margin": 0
+    }
+  }
+}

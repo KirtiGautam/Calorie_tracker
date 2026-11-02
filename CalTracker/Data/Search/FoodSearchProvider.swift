@@ -1,5 +1,5 @@
-/// A database that can be searched for foods by name.
+/// A database that can be searched for foods by name, one page at a time.
 nonisolated protocol FoodSearchProvider: Sendable {
-    /// Returns the foods matching `query`.
-    func search(_ query: String) async throws -> [FoodItem]
+    /// Returns one page of foods matching `request`.
+    func search(_ request: FoodSearchRequest) async throws -> FoodSearchPage
 }

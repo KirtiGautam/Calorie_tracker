@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Debounces queries, searches both food databases and publishes the outcome as `FoodSearchState`.
+/// Debounces queries, searches both food databases page by page and publishes the outcome as `FoodSearchState`.
 @Observable
 final class FoodSearchViewModel {
     /// The shortest query that triggers a search, which also keeps Open Food Facts' rate limit in reach.
@@ -50,13 +50,42 @@ final class FoodSearchViewModel {
         guard searchID == latestSearchID else { return }
 
         state = FoodSearchState(query: trimmed, results: .loading)
-        let results = await foodSearch.search(trimmed)
+        let batch = await foodSearch.search(trimmed)
         guard searchID == latestSearchID, Task.isCancelled == false else { return }
 
+        let results = FoodSearchResults(firstBatch: batch)
         if let error = results.errorIfAllFailed {
             state.results = .failed(userMessage(for: error))
         } else {
             state.results = .loaded(results)
         }
+    }
+
+    /// Loads the next page of the current results and adds it to the end.
+    ///
+    /// Call this from `.task(id:)` on the row at the end of the list. It does nothing while a page is loading,
+    /// after a page failed, or once every source has run out. A page for an older search is dropped. If the task
+    /// is cancelled, any source that already answered is kept and no error is shown.
+    func loadMore() async {
+        guard case .loaded(let results) = state.results, results.canLoadMore, case .idle = state.paging else { return }
+        let searchID = latestSearchID
+
+        state.paging = .loading
+        let batch = await foodSearch.search(state.query, cursor: results.cursor)
+        guard searchID == latestSearchID, case .loaded(var current) = state.results else { return }
+
+        let failures = current.append(batch)
+        state.results = .loaded(current)
+        if let failure = failures.first, Task.isCancelled == false {
+            state.paging = .failed(userMessage(for: failure.error))
+        } else {
+            state.paging = .idle
+        }
+    }
+
+    /// Clears a paging failure so the end-of-list row loads the page again.
+    func retryLoadMore() {
+        guard case .failed = state.paging else { return }
+        state.paging = .idle
     }
 }

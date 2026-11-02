@@ -1,63 +1,85 @@
-/// The outcome of searching both databases, kept separate so one failure doesn't hide the other's results.
+/// The results of one search, growing page by page as the person scrolls.
+///
+/// Each page's two sources are merged by alternating and added to the end, so rows already on screen never move.
 nonisolated struct FoodSearchResults: Sendable {
-    /// Whole foods from USDA FoodData Central.
-    var usda: Result<[FoodItem], any Error>
-
-    /// Packaged products from Open Food Facts.
-    var openFoodFacts: Result<[FoodItem], any Error>
-
-    /// Both sources' foods in one list, alternating between sources.
+    /// Both sources' foods in one list.
     ///
     /// Relevance scores from the two databases aren't comparable, so alternating keeps each
     /// source's own ranking and puts the best matches from both near the top.
-    var foods: [FoodItem] {
-        let usdaFoods = (try? usda.get()) ?? []
-        let offFoods = (try? openFoodFacts.get()) ?? []
-        var merged: [FoodItem] = []
-        merged.reserveCapacity(usdaFoods.count + offFoods.count)
-        for index in 0..<max(usdaFoods.count, offFoods.count) {
-            if index < usdaFoods.count { merged.append(usdaFoods[index]) }
-            if index < offFoods.count { merged.append(offFoods[index]) }
+    private(set) var foods: [FoodItem] = []
+
+    /// The next page to fetch from each source.
+    private(set) var cursor = FoodSearchCursor.firstPage
+
+    /// The sources that failed on page 1, in display order. Those sources don't page any further.
+    let failures: [SourceFailure]
+
+    /// The first error when every source failed on page 1, or `nil` when at least one succeeded.
+    let errorIfAllFailed: (any Error)?
+
+    /// The IDs in `foods`, so a food that shows up again on a later page is skipped.
+    private var foodIDs: Set<String> = []
+
+    /// Starts the results from page 1 of each source.
+    ///
+    /// A source that failed or wasn't asked stops paging, and its failure is kept in `failures`.
+    init(firstBatch batch: FoodSearchBatch) {
+        let failures = FoodSource.allCases.compactMap { source -> SourceFailure? in
+            guard case .failure(let error) = batch[source] else { return nil }
+            return SourceFailure(source: source, error: error)
         }
-        return merged
+        self.failures = failures
+        errorIfAllFailed = failures.count == FoodSource.allCases.count ? failures.first?.error : nil
+
+        for source in FoodSource.allCases where batch[source] == nil || failures.contains(where: { $0.source == source }) {
+            cursor[source] = nil
+        }
+        append(batch)
     }
 
-    /// The sources that failed, in display order.
-    var failures: [SourceFailure] {
+    /// Whether both sources answered page 1 but neither found a food, and there's nothing more to load.
+    var hasNoMatches: Bool {
+        failures.isEmpty && foods.isEmpty && cursor.hasMore == false
+    }
+
+    /// Whether at least one source has another page to load.
+    var canLoadMore: Bool {
+        cursor.hasMore
+    }
+
+    /// Adds a later page to the end of `foods`, skipping foods already listed.
+    ///
+    /// A source that succeeded moves its cursor on, or stops once it has no more pages. A source that
+    /// failed keeps its cursor, so the same page can be tried again.
+    ///
+    /// - Returns: The sources that failed on this page.
+    @discardableResult
+    mutating func append(_ batch: FoodSearchBatch) -> [SourceFailure] {
         var failures: [SourceFailure] = []
-        if case .failure(let error) = usda {
-            failures.append(SourceFailure(source: .usda, error: error))
+        var pages: [[FoodItem]] = []
+        for source in FoodSource.allCases {
+            switch batch[source] {
+            case .success(let page):
+                if let current = cursor[source] {
+                    cursor[source] = page.hasMore ? current + 1 : nil
+                }
+                pages.append(page.foods)
+            case .failure(let error):
+                failures.append(SourceFailure(source: source, error: error))
+            case nil:
+                break
+            }
         }
-        if case .failure(let error) = openFoodFacts {
-            failures.append(SourceFailure(source: .openFoodFacts, error: error))
+
+        let longest = pages.map(\.count).max() ?? 0
+        for index in 0..<longest {
+            for page in pages where index < page.count {
+                let food = page[index]
+                if foodIDs.insert(food.id).inserted {
+                    foods.append(food)
+                }
+            }
         }
         return failures
     }
-
-    /// Whether both sources answered successfully but neither found a food.
-    var hasNoMatches: Bool {
-        switch (usda, openFoodFacts) {
-        case (.success(let usdaFoods), .success(let offFoods)): usdaFoods.isEmpty && offFoods.isEmpty
-        default: false
-        }
-    }
-
-    /// The first error when every source failed, or `nil` when at least one succeeded.
-    var errorIfAllFailed: (any Error)? {
-        switch (usda, openFoodFacts) {
-        case (.failure(let error), .failure): error
-        default: nil
-        }
-    }
-}
-
-/// One database that couldn't answer a search.
-nonisolated struct SourceFailure: Identifiable, Sendable {
-    /// The database that failed.
-    let source: FoodSource
-
-    /// Why it failed.
-    let error: any Error
-
-    var id: FoodSource { source }
 }

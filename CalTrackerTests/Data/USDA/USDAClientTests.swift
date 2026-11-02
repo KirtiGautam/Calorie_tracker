@@ -8,6 +8,36 @@ struct USDAClientTests {
         USDAClient(httpClient: http, configuration: USDAConfiguration(apiKey: "test-key"))
     }
 
+    @Test func searchRequestSendsThePageNumber() throws {
+        let request = try client(MockHTTPClient(data: Data())).makeRequest(for: FoodSearchRequest(query: "oats", page: 3))
+
+        let body = try #require(request.httpBody)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        #expect(json["pageNumber"] as? Int == 3)
+        #expect(json["query"] as? String == "oats")
+    }
+
+    @Test func searchReportsMorePagesUntilTheLast() async throws {
+        let http = MockHTTPClient(data: try FixtureLoader.data(named: "usda_search_page"))
+
+        let page = try await client(http).search(FoodSearchRequest(query: "banana"))
+
+        #expect(page.hasMore)
+        #expect(page.foods.count == 2)
+    }
+
+    @Test func searchReportsNoMorePagesOnTheLastPage() async throws {
+        let http = MockHTTPClient(data: try FixtureLoader.data(named: "usda_search"))
+
+        #expect(try await client(http).search(FoodSearchRequest(query: "banana")).hasMore == false)
+    }
+
+    @Test func searchWithoutPagingFieldsHasNoMorePages() async throws {
+        let http = MockHTTPClient(data: Data(#"{"foods": []}"#.utf8))
+
+        #expect(try await client(http).search(FoodSearchRequest(query: "banana")).hasMore == false)
+    }
+
     @Test func foodsRequestPostsIDsInTheAbridgedFormat() throws {
         let request = try client(MockHTTPClient(data: Data())).makeFoodsRequest(fdcIDs: Array(1...25))
 

@@ -4,7 +4,7 @@ A calorie and macro tracker for iPhone and iPad. Search for a food, log how many
 
 ## Features
 
-- **Food search** across [USDA FoodData Central](https://fdc.nal.usda.gov) (whole foods) and [Open Food Facts](https://world.openfoodfacts.org) (packaged products). Both sources are queried in parallel, and if one fails the other's results still show.
+- **Food search** across [USDA FoodData Central](https://fdc.nal.usda.gov) (whole foods) and [Open Food Facts](https://world.openfoodfacts.org) (packaged products). Both sources are queried in parallel, and if one fails the other's results still show. More results load as you scroll.
 - **Log by weight.** Enter grams or tap a preset, and the nutrients are scaled for you.
 - **Today at a glance.** Energy, protein, carbs and fat with progress bars against your targets, plus a micronutrient breakdown and a line of encouragement based on how your day is going.
 - **Look back.** Swipe or tap the arrows to step through earlier days you logged food on.
