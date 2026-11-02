@@ -4,7 +4,8 @@ import SwiftData
 extension SchemaV1 {
     /// A logged food as version 1 stored it, frozen so the migration to version 2 can read old stores.
     ///
-    /// Don't change this type. Add a new schema version instead.
+    /// Don't change this type, or any type it stores, such as `SchemaV1.NutrientProfile`. Add a new schema version instead.
+    /// `FoodSource` is stored as its raw value, so adding a case doesn't change the stored layout.
     @Model
     final class FoodLogEntry {
         #Index<FoodLogEntry>([\.loggedAt])
@@ -25,7 +26,7 @@ extension SchemaV1 {
         var grams: Double = 0
 
         /// The food's nutrients per 100 g.
-        var per100g: NutrientProfile = NutrientProfile()
+        var per100g: SchemaV1.NutrientProfile = SchemaV1.NutrientProfile()
 
         /// When the food was logged.
         var loggedAt: Date = Date.now
@@ -37,7 +38,7 @@ extension SchemaV1 {
             brand = food.brand
             source = food.source
             self.grams = grams
-            per100g = food.per100g
+            per100g = SchemaV1.NutrientProfile(food.per100g)
             self.loggedAt = loggedAt
         }
     }
