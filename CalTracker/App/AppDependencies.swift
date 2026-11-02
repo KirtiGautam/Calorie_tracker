@@ -18,9 +18,6 @@ struct AppDependencies {
     /// Backs the log and goal up to the account and restores them.
     let sync: SyncEngine
 
-    /// Looks foods up again by ID when a log is restored.
-    let foodLookup: any FoodLookup
-
     /// How long search waits after the last keystroke.
     var searchDebounce: Duration = FoodSearchViewModel.defaultDebounce
 
@@ -59,13 +56,12 @@ struct AppDependencies {
         let targets = TargetsStore(defaults: defaults)
         let api = GramwiseClient(httpClient: session, configuration: GramwiseConfiguration(bundle: .main))
         let account = AccountSession(api: api, tokenStore: tokenStore)
-        let foodLookup = ProviderFoodLookup(usda: usda, openFoodFacts: openFoodFacts)
         let sync = SyncEngine(
             modelContext: modelContext,
             targets: targets,
             account: account,
             api: api,
-            foodLookup: foodLookup,
+            foodLookup: ProviderFoodLookup(usda: usda, openFoodFacts: openFoodFacts),
             defaults: defaults
         )
         // The stores are created before the engine, so they're connected to it here.
@@ -77,8 +73,7 @@ struct AppDependencies {
             foodLog: foodLog,
             targets: targets,
             account: account,
-            sync: sync,
-            foodLookup: foodLookup
+            sync: sync
         )
     }
 

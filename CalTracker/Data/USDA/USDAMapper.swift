@@ -18,7 +18,7 @@ nonisolated enum USDAMapper {
 
         let brand = food.brandOwner?.trimmingCharacters(in: .whitespacesAndNewlines)
         return FoodItem(
-            id: "usda-\(food.fdcId)",
+            id: FoodSource.usda.foodID(code: String(food.fdcId)),
             name: name,
             brand: brand?.isEmpty == false ? brand : nil,
             source: .usda,
@@ -86,7 +86,7 @@ nonisolated enum USDAMapper {
         if nutrient.unit == .kilocalories {
             return switch unitName {
             case "KCAL": value
-            case "KJ": value / OFFMapper.kilojoulesPerKilocalorie
+            case "KJ": value / NutrientUnit.kilojoulesPerKilocalorie
             default: nil
             }
         }

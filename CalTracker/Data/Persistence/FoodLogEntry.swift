@@ -65,7 +65,7 @@ extension SchemaV2 {
         /// Matches entries logged on the same calendar day as `date`.
         static func loggedOnSameDay(as date: Date, calendar: Calendar) -> Predicate<FoodLogEntry> {
             let start = calendar.startOfDay(for: date)
-            let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(86_400)
+            let end = startOfNextDay(after: start, calendar: calendar)
             return #Predicate<FoodLogEntry> { entry in
                 entry.loggedAt >= start && entry.loggedAt < end
             }
@@ -95,12 +95,16 @@ extension SchemaV2 {
 
         /// Matches entries logged after the calendar day of `date` ends and before the calendar day of `today` begins.
         static func loggedBetweenDay(after date: Date, andDay today: Date, calendar: Calendar) -> Predicate<FoodLogEntry> {
-            let dayStart = calendar.startOfDay(for: date)
-            let start = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86_400)
+            let start = startOfNextDay(after: calendar.startOfDay(for: date), calendar: calendar)
             let end = calendar.startOfDay(for: today)
             return #Predicate<FoodLogEntry> { entry in
                 entry.loggedAt >= start && entry.loggedAt < end
             }
+        }
+
+        /// Returns the start of the day after the one starting at `dayStart`.
+        private static func startOfNextDay(after dayStart: Date, calendar: Calendar) -> Date {
+            calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86_400)
         }
     }
 }

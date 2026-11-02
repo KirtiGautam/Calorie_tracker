@@ -207,8 +207,8 @@ final class SyncEngine {
             (tombstone: tombstone, food: GramwiseRemovedFood(logDate: tombstone.day, entryID: tombstone.syncID))
         }
 
-        let addedBatches = Self.batches(of: added, size: GramwiseLogChanges.maxCount)
-        let removedBatches = Self.batches(of: removed, size: GramwiseLogChanges.maxCount)
+        let addedBatches = added.chunked(into: GramwiseLogChanges.maxCount)
+        let removedBatches = removed.chunked(into: GramwiseLogChanges.maxCount)
         var refusal: GramwiseAPIError?
         for index in 0..<max(addedBatches.count, removedBatches.count) {
             // After a refused day, the rest of this pass's additions wait too.
@@ -274,9 +274,7 @@ final class SyncEngine {
     /// without a removal the next pull would restore it. The server ignores removals of entries it doesn't have.
     private func tombstoneDeletionsFromUnconfirmedPush() throws {
         guard let unconfirmed = defaults.dictionary(forKey: Key.unconfirmed) as? [String: String] else { return }
-        let identified = try modelContext.fetch(FetchDescriptor<FoodLogEntry>(predicate: #Predicate { $0.syncID != nil }))
-        let tombstoned = try modelContext.fetch(FetchDescriptor<FoodLogDeletion>()).map(\.syncID)
-        let known = Set(identified.compactMap(\.syncID)).union(tombstoned)
+        let known = Set(try entriesBySyncID().keys).union(try tombstonedSyncIDs())
         for (id, day) in unconfirmed {
             guard let syncID = UUID(uuidString: id), known.contains(syncID) == false else { continue }
             modelContext.insert(FoodLogDeletion(syncID: syncID, day: day))
@@ -401,14 +399,8 @@ final class SyncEngine {
     private func apply(_ days: [GramwiseDailyLog]) async throws {
         guard days.isEmpty == false else { return }
 
-        let tombstoned = Set(try modelContext.fetch(FetchDescriptor<FoodLogDeletion>()).map(\.syncID))
-        let identified = try modelContext.fetch(FetchDescriptor<FoodLogEntry>(predicate: #Predicate { $0.syncID != nil }))
-        var local: [UUID: FoodLogEntry] = [:]
-        for entry in identified {
-            if let syncID = entry.syncID {
-                local[syncID] = entry
-            }
-        }
+        let tombstoned = try tombstonedSyncIDs()
+        var local = try entriesBySyncID()
 
         var missing: [(day: String, food: GramwiseLoggedFood)] = []
         for day in days {
@@ -447,75 +439,28 @@ final class SyncEngine {
         try modelContext.save()
     }
 
-    // MARK: - Mapping
-
-    /// Whether the server accepts `entry`: a USDA or Open Food Facts food ID it allows and an amount it allows.
-    static func isSyncable(_ entry: FoodLogEntry) -> Bool {
-        entry.foodID.wholeMatch(of: /(usda|off)-[A-Za-z0-9]+/) != nil
-            && entry.foodID.unicodeScalars.count <= maxFoodIDLength
-            && entry.grams > 0
-            && entry.grams <= maxGrams
-    }
-
-    /// The largest amount the server accepts for one entry, in grams.
-    static let maxGrams = 5_000.0
-
-    /// The longest food ID the server accepts.
-    static let maxFoodIDLength = 64
-
-    /// The longest name the server accepts, in Unicode scalars, because it counts code points rather than characters.
-    static let maxNameLength = 500
-
-    /// The most foods the server keeps for one day, counting every device's foods.
-    static let maxFoodsPerDay = 200
-
-    /// The item the server stores for `entry`, with the macros for the amount eaten.
-    static func loggedFood(for entry: FoodLogEntry, id: UUID) -> GramwiseLoggedFood {
-        let name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let nutrients = entry.nutrients
-        return GramwiseLoggedFood(
-            entryID: id,
-            foodID: entry.foodID,
-            name: name.isEmpty ? entry.foodID : String(String.UnicodeScalarView(name.unicodeScalars.prefix(maxNameLength))),
-            grams: entry.grams,
-            loggedAt: entry.loggedAt,
-            energyKcal: nutrients.energy,
-            proteinG: nutrients.protein,
-            carbsG: nutrients.carbohydrates,
-            fatG: nutrients.fat
-        )
-    }
-
-    /// Rebuilds the food for a restored entry.
-    ///
-    /// Micronutrients come from the provider's current data when the lookup found it. The macros always come from
-    /// the logged item, scaled back to 100 g, so the day's totals match what was logged.
-    static func restoredFood(from food: GramwiseLoggedFood, provider: FoodItem?) -> FoodItem {
-        var per100g = provider?.per100g ?? NutrientProfile()
-        let factor = food.grams > 0 ? 100 / food.grams : 0
-        per100g.energy = food.energyKcal.map { $0 * factor }
-        per100g.protein = food.proteinG.map { $0 * factor }
-        per100g.carbohydrates = food.carbsG.map { $0 * factor }
-        per100g.fat = food.fatG.map { $0 * factor }
-
-        return FoodItem(
-            id: food.foodID,
-            name: food.name,
-            brand: provider?.brand,
-            source: provider?.source ?? (food.foodID.hasPrefix("off-") ? .openFoodFacts : .usda),
-            per100g: per100g
-        )
-    }
+    // MARK: - Helpers
 
     /// The server day for `date` in this engine's calendar, such as `2026-10-29`.
     func dayKey(for date: Date) -> String {
         date.formatted(Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day())
     }
 
-    private static func batches<Element>(of elements: [Element], size: Int) -> [ArraySlice<Element>] {
-        stride(from: 0, to: elements.count, by: size).map { start in
-            elements[start..<min(start + size, elements.count)]
+    /// Returns every entry that has a sync ID, keyed by it.
+    private func entriesBySyncID() throws -> [UUID: FoodLogEntry] {
+        let identified = try modelContext.fetch(FetchDescriptor<FoodLogEntry>(predicate: #Predicate { $0.syncID != nil }))
+        var entries: [UUID: FoodLogEntry] = [:]
+        for entry in identified {
+            if let syncID = entry.syncID {
+                entries[syncID] = entry
+            }
         }
+        return entries
+    }
+
+    /// Returns the sync IDs of the deletions that haven't reached the server yet.
+    private func tombstonedSyncIDs() throws -> Set<UUID> {
+        Set(try modelContext.fetch(FetchDescriptor<FoodLogDeletion>()).map(\.syncID))
     }
 
     /// An entry being pushed, with the item sent for it.

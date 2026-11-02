@@ -7,6 +7,9 @@ nonisolated enum NutrientUnit: String, Codable, Sendable {
     case milligrams
     case micrograms
 
+    /// Kilojoules per kilocalorie, for sources that report energy in kJ.
+    static let kilojoulesPerKilocalorie = 4.184
+
     /// How many of this unit make up one gram, used to convert gram-based source data.
     ///
     /// - Note: Energy has no gram equivalent, so kilocalories report `1`.
@@ -28,6 +31,30 @@ nonisolated enum NutrientUnit: String, Codable, Sendable {
         }
     }
 
+    /// Formats an amount in this unit for display, such as "12.5 mg" or "89 kcal".
+    ///
+    /// - Parameters:
+    ///   - value: The amount, already expressed in this unit.
+    ///   - spelledOut: Whether to spell the unit out ("grams"), for spoken accessibility labels.
+    /// - Returns: A localized string with at most one fraction digit.
+    func formatted(_ value: Double, spelledOut: Bool = false) -> String {
+        switch self {
+        case .kilocalories: Self.format(value, in: UnitEnergy.kilocalories, spelledOut: spelledOut)
+        case .grams: Self.format(value, in: UnitMass.grams, spelledOut: spelledOut)
+        case .milligrams: Self.format(value, in: UnitMass.milligrams, spelledOut: spelledOut)
+        case .micrograms: Self.format(value, in: UnitMass.micrograms, spelledOut: spelledOut)
+        }
+    }
+
+    /// Formats `value` in `unit` with at most one fraction digit, with the unit abbreviated or spelled out.
+    private static func format<UnitType: Dimension>(_ value: Double, in unit: UnitType, spelledOut: Bool) -> String {
+        Measurement(value: value, unit: unit).formatted(.measurement(
+            width: spelledOut ? .wide : .abbreviated,
+            usage: .asProvided,
+            numberFormatStyle: .number.precision(.fractionLength(0...1))
+        ))
+    }
+
     /// Formats a sample measurement and keeps only the unit part, since `Dimension.symbol` isn't localized ("kCal").
     private static func abbreviation<UnitType: Dimension>(of unit: UnitType) -> String {
         let formatted = Measurement(value: 1, unit: unit)
@@ -36,29 +63,5 @@ nonisolated enum NutrientUnit: String, Codable, Sendable {
             .filter { component, _ in component == .unit }
             .map { _, range in String(formatted[range].characters) }
             .joined()
-    }
-
-    /// Formats an amount in this unit for display, such as "12.5 mg" or "89 kcal".
-    ///
-    /// - Parameters:
-    ///   - value: The amount, already expressed in this unit.
-    ///   - spelledOut: Whether to spell the unit out ("grams"), for spoken accessibility labels.
-    /// - Returns: A localized string with at most one fraction digit.
-    func formatted(_ value: Double, spelledOut: Bool = false) -> String {
-        let number = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0...1))
-        return switch self {
-        case .kilocalories:
-            Measurement(value: value, unit: UnitEnergy.kilocalories)
-                .formatted(.measurement(width: spelledOut ? .wide : .abbreviated, usage: .asProvided, numberFormatStyle: number))
-        case .grams:
-            Measurement(value: value, unit: UnitMass.grams)
-                .formatted(.measurement(width: spelledOut ? .wide : .abbreviated, usage: .asProvided, numberFormatStyle: number))
-        case .milligrams:
-            Measurement(value: value, unit: UnitMass.milligrams)
-                .formatted(.measurement(width: spelledOut ? .wide : .abbreviated, usage: .asProvided, numberFormatStyle: number))
-        case .micrograms:
-            Measurement(value: value, unit: UnitMass.micrograms)
-                .formatted(.measurement(width: spelledOut ? .wide : .abbreviated, usage: .asProvided, numberFormatStyle: number))
-        }
     }
 }

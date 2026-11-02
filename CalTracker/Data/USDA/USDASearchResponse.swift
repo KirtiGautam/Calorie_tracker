@@ -38,14 +38,6 @@ nonisolated struct USDASearchResponse: Decodable, Sendable {
             case foodNutrients
         }
 
-        /// Creates a food from already-decoded values.
-        init(fdcId: Int, name: String?, brandOwner: String?, foodNutrients: [FoodNutrient]) {
-            self.fdcId = fdcId
-            self.name = name
-            self.brandOwner = brandOwner
-            self.foodNutrients = foodNutrients
-        }
-
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             fdcId = try container.decode(Int.self, forKey: .fdcId)
@@ -56,6 +48,9 @@ nonisolated struct USDASearchResponse: Decodable, Sendable {
     }
 
     /// One nutrient amount for a food.
+    ///
+    /// Search results call the number and amount `nutrientNumber` and `value`. The `foods` endpoint's abridged
+    /// format calls them `number` and `amount`, and either spelling decodes.
     struct FoodNutrient: Decodable, Sendable {
         /// The legacy nutrient number, such as "208" for energy in kcal.
         let nutrientNumber: String?
@@ -65,5 +60,25 @@ nonisolated struct USDASearchResponse: Decodable, Sendable {
 
         /// The amount per 100 g, in `unitName`.
         let value: Double?
+    }
+}
+
+// The decoder lives in an extension so the memberwise initializer stays available.
+nonisolated extension USDASearchResponse.FoodNutrient {
+    private enum CodingKeys: String, CodingKey {
+        case nutrientNumber
+        case unitName
+        case value
+        case number
+        case amount
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        nutrientNumber = try container.decodeIfPresent(String.self, forKey: .nutrientNumber)
+            ?? container.decodeIfPresent(String.self, forKey: .number)
+        unitName = try container.decodeIfPresent(String.self, forKey: .unitName)
+        value = try container.decodeIfPresent(Double.self, forKey: .value)
+            ?? container.decodeIfPresent(Double.self, forKey: .amount)
     }
 }
