@@ -2,11 +2,15 @@ import os
 from collections.abc import Iterator
 from typing import Any
 
-# Settings are read at import time, so this must run before `app` is imported.
-# The URL is never connected to: tests that need a database override the session.
+# Settings are read at import time, so this must run before `app` is imported. Every setting is
+# pinned, so neither the shell nor a developer's .env can change what the tests see
+# (tests/test_config.py checks that none is missed). The URL is never connected to: tests that
+# need a database override the session.
 os.environ["DATABASE_URL"] = "postgresql://test:test@db.invalid:5432/test"
 os.environ["FASTAPI_ENV"] = "production"
 os.environ["JWT_SECRET"] = "test-secret-that-is-long-enough-for-hs256-0123456789"
+os.environ["ACCESS_TOKEN_MINUTES"] = "30"
+os.environ["REFRESH_TOKEN_DAYS"] = "60"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

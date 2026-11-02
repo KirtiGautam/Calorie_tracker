@@ -11,7 +11,7 @@ cp .env.example .env        # then fill in DATABASE_URL and JWT_SECRET (openssl 
 ./scripts/bootstrap_db.sh   # optional: runs db/bootstrap.sql against Supabase with psql from the postgres image
 ```
 
-Every setting comes from `.env`. Compose passes it to the containers with `env_file`, and it's never copied into an image.
+Every setting comes from `.env`. Compose passes it to the containers with `env_file`, and it's never copied into an image. Outside `development`, the API refuses to start with a `JWT_SECRET` that is `changethis` or shorter than 32 bytes.
 
 ## Run
 
