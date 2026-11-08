@@ -71,13 +71,10 @@ struct CombinedFoodSearchTests {
 
         let usdaRequest = try #require(usdaHTTP.requests.first)
         #expect(usdaRequest.httpMethod == "POST")
+        #expect(usdaRequest.url?.host() == "api.example.com")
         #expect(usdaRequest.value(forHTTPHeaderField: "Content-Type") == "application/json")
-        #expect(try queryItems(of: usdaRequest) == ["api_key": "TEST_KEY"])
-        let usdaBody = try usdaSearchBody(of: usdaRequest)
-        #expect(usdaBody["query"] as? String == "rolled oats")
-        #expect(usdaBody["dataType"] as? [String] == ["Foundation", "SR Legacy", "Survey (FNDDS)"])
-        #expect(usdaBody["pageSize"] as? Int == 20)
-        #expect(usdaBody["pageNumber"] as? Int == 1)
+        let usdaBody = try #require(try usdaSearchBody(of: usdaRequest) as? [String: AnyHashable])
+        #expect(usdaBody == ["query": "rolled oats", "page": 1])
     }
 
     @Test func asksEachSourceForItsOwnNextPage() async {
@@ -122,10 +119,9 @@ struct CombinedFoodSearchTests {
 
         _ = await search.search("M+M")
 
-        // Some USDA servers answer HTTP 400 to any parentheses in the URL, so the criteria travel in the body.
+        // The USDA search text travels in the body, where no character needs encoding.
         let usdaRequest = try #require(usdaHTTP.requests.first)
-        let usdaQuery = try #require(usdaRequest.url?.query(percentEncoded: true))
-        #expect(usdaQuery.contains("(") == false && usdaQuery.contains("%28") == false)
+        #expect(usdaRequest.url?.query() == nil)
         #expect(try usdaSearchBody(of: usdaRequest)["query"] as? String == "M+M")
         // A raw `+` reads as a space.
         let offQuery = try #require(offHTTP.requests.first?.url?.query(percentEncoded: true))
@@ -135,7 +131,7 @@ struct CombinedFoodSearchTests {
 
     private func makeSearch(usdaHTTP: MockHTTPClient, offHTTP: MockHTTPClient) -> CombinedFoodSearch {
         CombinedFoodSearch(
-            usda: USDAClient(httpClient: usdaHTTP, configuration: USDAConfiguration(apiKey: "TEST_KEY")),
+            usda: USDAClient(httpClient: usdaHTTP, configuration: GramwiseConfiguration(baseURL: URL(string: "https://api.example.com") ?? URL(filePath: "/"))),
             openFoodFacts: OpenFoodFactsClient(httpClient: offHTTP)
         )
     }

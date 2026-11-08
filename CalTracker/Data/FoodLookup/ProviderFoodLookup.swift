@@ -31,8 +31,9 @@ nonisolated struct ProviderFoodLookup: FoodLookup {
                 for food in try await usda.foods(fdcIDs: Array(batch)) {
                     found[food.id] = food
                 }
-            } catch APIError.rateLimited {
-                // Later batches would be refused too. The rest fall back to their logged macros.
+            } catch APIError.rateLimited, APIError.httpStatus(503) {
+                // Later batches would be refused too: this client is over its limit, or the backend's shared USDA key
+                // is blocked for everyone. The rest fall back to their logged macros.
                 break
             } catch {
                 // This batch falls back to its logged macros. The next one may still work.

@@ -94,9 +94,9 @@ For the current branch, run the same commands in the repo, without the worktree.
 
 - **Always pass `-collect-test-diagnostics never`.** Without it, a run with a failing test can hang and never exit.
 - If `iPhone Duo` isn't installed, pick another device from `xcrun simctl list devices available`. If the Xcode MCP tools are connected, prefer them.
-- `Config/Secrets.xcconfig` is gitignored and included with `#include?`, so the worktree builds with `DEMO_KEY`. That's expected.
+- `Config/Secrets.xcconfig` is gitignored and included with `#include?`, so the worktree builds against the default `http://localhost:8000` backend. That's expected.
 - Keep only warnings in files the PR changed, plus any new warnings it causes elsewhere. A build or test failure is a finding on its own (see Step 5).
-- Don't run the UI tests unless asked. They're slow and hit the live USDA and Open Food Facts APIs.
+- Don't run the UI tests unless asked. They're slow and hit the live Open Food Facts API and, through the backend, USDA.
 - When you're done, run `git worktree remove --force <scratchpad>/review-<n>`, after 3c if it runs there too.
 
 ### 3c. Backend lint and tests (unless skipped)
@@ -131,7 +131,7 @@ For each candidate finding, reopen the lines and confirm that the code really do
 | Severity | Meaning in this project |
 |---|---|
 | **Critical** | Crash, lost or corrupted food logs or targets (on device or on the server), a committed secret or `backend/.env`, build broken, unit tests failing. On the backend: an edited migration that has already run, lint failing, or coverage below 90%. |
-| **High** | A bug users will hit. An error from a user action swallowed or only printed. A SwiftData schema change without a migration stage. A data race or strict-concurrency warning. Live network in unit tests. A broken `AGENTS.md` "don't": new dependency, deployment target change, hand-edited `project.pbxproj` file references, rename of targets or bundle ID. On the backend: a blocking call in `async def`, a route without `CurrentUserDep` or a missing ownership check, a model and migration that don't match, a new table without RLS, an unbounded input or list, an error outside the envelope, an API change that breaks installed app builds, a sync change that makes retries unsafe, or a new dependency. |
+| **High** | A bug users will hit. An error from a user action swallowed or only printed. A SwiftData schema change without a migration stage. A data race or strict-concurrency warning. Live network in unit tests. A broken `AGENTS.md` "don't": new dependency, deployment target change, hand-edited `project.pbxproj` file references, rename of targets or bundle ID. On the backend: a blocking call in `async def`, a route without `CurrentUserDep` (other than the public `/health*`, `/auth/*` and `/usda/*`) or a missing ownership check, a model and migration that don't match, a new table without RLS, an unbounded input or list, an error outside the envelope, an API change that breaks installed app builds, a sync change that makes retries unsafe, or a new dependency. |
 | **Medium** | An accessibility gap, a user-facing string not in the catalog, missing tests for new logic, deprecated or soft-deprecated API, work in a hot path (`body`, row views), or a convention break with real maintenance cost. On the backend: a stale route table in `backend/README.md`, a service that imports `fastapi`, or a `# noqa` with no reason. |
 | **Low** | Naming, a small modernization, doc comment wording. Report at most five, and none if the review is already long. |
 

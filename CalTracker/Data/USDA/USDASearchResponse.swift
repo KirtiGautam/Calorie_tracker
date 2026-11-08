@@ -1,4 +1,4 @@
-/// The USDA FoodData Central `foods/search` response, limited to the fields CalTracker uses.
+/// The backend's `usda/foods/search` response: USDA FoodData Central's field names, limited to the ones CalTracker uses.
 nonisolated struct USDASearchResponse: Decodable, Sendable {
     /// The matching foods.
     let foods: [Food]
@@ -60,8 +60,8 @@ nonisolated struct USDASearchResponse: Decodable, Sendable {
 
     /// One nutrient amount for a food.
     ///
-    /// Search results call the number and amount `nutrientNumber` and `value`. The `foods` endpoint's abridged
-    /// format calls them `number` and `amount`, and either spelling decodes.
+    /// Search results call the number and amount `nutrientNumber` and `value`. The `usda/foods` route calls them
+    /// `number` and `amount`, and either spelling decodes.
     struct FoodNutrient: Decodable, Sendable {
         /// The legacy nutrient number, such as "208" for energy in kcal.
         let nutrientNumber: String?

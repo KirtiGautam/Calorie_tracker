@@ -8,7 +8,7 @@ These come from `AGENTS.md` and the code as it stands. They override the generic
 - **Deployment target stays at 27.0.** Any change to `IPHONEOS_DEPLOYMENT_TARGET` is a finding.
 - **Names stay put.** The project, targets and module stay `CalTracker`, and the bundle ID stays `com.kirti.Gramwise`. The display name `Gramwise` comes from `INFOPLIST_KEY_CFBundleDisplayName`.
 - **Don't hand-edit `project.pbxproj` to add files.** The targets use file system synchronized groups, so new `PBXFileReference` or `PBXBuildFile` entries for sources under `CalTracker/`, `CalTrackerTests/` or `CalTrackerUITests/` are wrong. Build setting changes can be legitimate, but they need a reason.
-- **No secrets in tracked files.** `Config/Secrets.xcconfig` must never appear in the diff. A real USDA key must never appear anywhere. `DEMO_KEY` in `Base.xcconfig` is fine. (A secret is Critical.)
+- **No secrets in tracked files.** `Config/Secrets.xcconfig` must never appear in the diff. A real USDA key must never appear anywhere, and no API key belongs in the app at all: not in Swift, `Info.plist` or a build setting it references, because all of those can be read out of an installed build. `backend/.env.example` leaves `USDA_API_KEY` empty, and `config.py` refuses to start with a missing, blank or `DEMO_KEY` key in any environment. Weakening that check is High. (A secret is Critical.)
 - **No build output.** Nothing under `build/` or `DerivedData/`.
 - **Plain commit messages.** A short summary line and an optional body. No `Co-Authored-By` or other attribution trailers. Check them with `gh pr view <n> --json commits`. This is Low unless the PR is about to be squash-merged with those lines.
 
@@ -18,7 +18,8 @@ These come from `AGENTS.md` and the code as it stands. They override the generic
 - **`Data/`** is the only layer that talks to the outside world.
   - Clients take an `HTTPClient` dependency. They never use `URLSession.shared` or construct a `URLSession` directly, because then tests can't inject `MockHTTPClient`.
   - Each source has a client, response DTOs, and a mapper that turns DTOs into `FoodItem`. Mapping logic belongs in the mapper, not in the client or the view model.
-  - Query strings go through `URLComponents.setStrictlyEncodedQueryItems(_:)`. Plain `queryItems` leaves `(`, `)` and `+` raw, USDA rejects raw parentheses, and servers read `+` as a space. Never build URLs by string interpolation. USDA search criteria go in the POST body.
+  - Query strings go through `URLComponents.setStrictlyEncodedQueryItems(_:)`. Plain `queryItems` leaves `(`, `)` and `+` raw, and servers read `+` as a space. Never build URLs by string interpolation. USDA search text goes in the POST body to the backend, which keeps it out of access logs.
+  - `USDAClient` talks to the Gramwise backend's `/usda` routes, never to USDA directly. A direct call would need a key in the app.
   - `CombinedFoodSearch` keeps each source's `Result` separately, so one failing source never hides the other. Any change that makes one failure fail the whole search (`withThrowingTaskGroup` without per-child catching, an early `throw`, or `try` on the combined result) is a High regression.
   - Persistence goes through the `FoodLogging` protocol, implemented by `FoodLogStore`. View models must not touch `ModelContext` directly.
   - `TargetsStore` keeps targets, body profile and goal in `UserDefaults` as JSON under `targets.*` keys. New keys use that prefix. Renaming a key or changing the shape of its JSON silently resets users' saved targets unless there's a fallback decode. Treat that as data loss.

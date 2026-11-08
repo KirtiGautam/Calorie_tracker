@@ -5,16 +5,19 @@ import Testing
 @Suite(.tags(.networking))
 struct USDAClientTests {
     private func client(_ http: MockHTTPClient) -> USDAClient {
-        USDAClient(httpClient: http, configuration: USDAConfiguration(apiKey: "test-key"))
+        USDAClient(httpClient: http, configuration: GramwiseConfiguration(baseURL: URL(string: "https://api.example.com") ?? URL(filePath: "/")))
     }
 
-    @Test func searchRequestSendsThePageNumber() throws {
+    @Test func searchRequestGoesToTheBackendWithOnlyTheQueryAndPage() throws {
         let request = try client(MockHTTPClient(data: Data())).makeRequest(for: FoodSearchRequest(query: "oats", page: 3))
 
+        #expect(request.httpMethod == "POST")
+        #expect(request.url?.absoluteString == "https://api.example.com/usda/foods/search")
+        #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+        #expect(request.timeoutInterval == USDAClient.timeout)
         let body = try #require(request.httpBody)
-        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
-        #expect(json["pageNumber"] as? Int == 3)
-        #expect(json["query"] as? String == "oats")
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: AnyHashable])
+        #expect(json == ["query": "oats", "page": 3])
     }
 
     @Test func searchIgnoresFilters() throws {
@@ -52,16 +55,43 @@ struct USDAClientTests {
         #expect(try await client(http).search(FoodSearchRequest(query: "banana")).hasMore == false)
     }
 
-    @Test func foodsRequestPostsIDsInTheAbridgedFormat() throws {
+    @Test func foodsRequestGoesToTheBackendWithAtMostTwentyIDs() throws {
         let request = try client(MockHTTPClient(data: Data())).makeFoodsRequest(fdcIDs: Array(1...25))
 
         #expect(request.httpMethod == "POST")
-        #expect(request.url?.path() == "/fdc/v1/foods")
-        #expect(request.url?.query() == "api_key=test-key")
+        #expect(request.url?.absoluteString == "https://api.example.com/usda/foods")
         let body = try #require(request.httpBody)
-        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
-        #expect(json["fdcIds"] as? [Int] == Array(1...20))
-        #expect(json["format"] as? String == "abridged")
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: [Int]])
+        #expect(json == ["fdc_ids": Array(1...20)])
+    }
+
+    @Test func requestsCarryNoAPIKey() throws {
+        let usda = client(MockHTTPClient(data: Data()))
+        let requests = [
+            try usda.makeRequest(for: FoodSearchRequest(query: "oats")),
+            try usda.makeFoodsRequest(fdcIDs: [1]),
+        ]
+
+        for request in requests {
+            #expect(request.url?.query() == nil)
+            #expect(Set((request.allHTTPHeaderFields ?? [:]).keys) == ["Content-Type", "Accept"])
+        }
+    }
+
+    @Test func rateLimitedResponsesAreReportedAsRateLimited() async {
+        let http = MockHTTPClient(data: MockHTTPClient.envelope(code: "rate_limited"), statusCode: 429)
+
+        await #expect(throws: APIError.rateLimited) {
+            try await client(http).search(FoodSearchRequest(query: "banana"))
+        }
+    }
+
+    @Test func backendFailuresAreReportedByStatus() async {
+        let http = MockHTTPClient(data: MockHTTPClient.envelope(code: "usda_unavailable"), statusCode: 502)
+
+        await #expect(throws: APIError.httpStatus(502)) {
+            try await client(http).foods(fdcIDs: [1])
+        }
     }
 
     @Test func foodsResponseMapsToFoodItems() async throws {

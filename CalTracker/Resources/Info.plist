@@ -16,7 +16,5 @@
 		<key>UIImageName</key>
 		<string>LaunchMark</string>
 	</dict>
-	<key>USDAAPIKey</key>
-	<string>$(USDA_API_KEY)</string>
 </dict>
 </plist>

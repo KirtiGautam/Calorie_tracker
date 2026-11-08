@@ -50,11 +50,12 @@ struct AppDependencies {
         defaults: UserDefaults = .standard
     ) -> AppDependencies {
         let session = URLSession.shared
-        let usda = USDAClient(httpClient: session, configuration: USDAConfiguration(bundle: .main))
+        let backend = GramwiseConfiguration(bundle: .main)
+        let usda = USDAClient(httpClient: session, configuration: backend)
         let openFoodFacts = OpenFoodFactsClient(httpClient: session)
         let foodLog = FoodLogStore(modelContext: modelContext)
         let targets = TargetsStore(defaults: defaults)
-        let api = GramwiseClient(httpClient: session, configuration: GramwiseConfiguration(bundle: .main))
+        let api = GramwiseClient(httpClient: session, configuration: backend)
         let account = AccountSession(api: api, tokenStore: tokenStore)
         let sync = SyncEngine(
             modelContext: modelContext,
