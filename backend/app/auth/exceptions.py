@@ -6,7 +6,13 @@ from app.exceptions import AppError
 
 
 class InvalidCredentials(AppError):
-    status_code = status.HTTP_401_UNAUTHORIZED
+    """A wrong password or an unknown email at sign-in.
+
+    A 400, as for OAuth's `invalid_grant` (RFC 6749 §5.2): sign-in doesn't use HTTP authentication,
+    so a 401 and its required `WWW-Authenticate` challenge don't apply.
+    """
+
+    status_code = status.HTTP_400_BAD_REQUEST
     code = "invalid_credentials"
 
 
@@ -29,3 +35,14 @@ class InvalidToken(AppError):
     ) -> None:
         challenge = 'Bearer error="invalid_token"' if token_sent else "Bearer"
         super().__init__(message, details, headers={"WWW-Authenticate": challenge})
+
+
+class InvalidRefreshToken(AppError):
+    """A refresh token in a request body that's malformed, expired, used, revoked or for a deleted account.
+
+    A 400, as for OAuth's `invalid_grant`, since the token isn't HTTP authentication. It keeps the
+    `invalid_token` code, which the app signs out on.
+    """
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "invalid_token"

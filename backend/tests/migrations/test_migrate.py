@@ -84,3 +84,18 @@ def test_sql_creates_every_model_table_and_column() -> None:
                 f"{table.name}.{column.name} is missing from the SQL"
             )
         assert f"ALTER TABLE {table.name} ENABLE ROW LEVEL SECURITY" in sql
+
+
+def test_expired_refresh_tokens_are_pruned_daily_using_an_index() -> None:
+    sql = "\n".join(migration.sql.decode() for migration in load_migrations())
+
+    assert "CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog" in sql
+    assert "ON refresh_token (expires_at)" in sql
+    job = re.search(r"cron\.schedule\(\s*'([^']+)',\s*'([^']+)',\s*\$\$(.*?)\$\$", sql)
+    assert job is not None
+    assert job[1] == "prune-expired-refresh-tokens"
+    assert job[2] == "17 3 * * *"
+    assert (
+        job[3]
+        == "DELETE FROM refresh_token WHERE expires_at < now() - interval '1 day'"
+    )

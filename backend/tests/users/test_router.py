@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
+from app.auth.models import RefreshToken
 from app.daily_logs.models import DailyLog
 from app.goals.models import UserGoal
 from tests.conftest import bearer, signup
@@ -58,7 +59,9 @@ def test_delete_me_cascades_to_goal_and_logs(api: TestClient, session: Session) 
     assert api.get("/me", headers=headers).status_code == 401
     assert session.exec(select(UserGoal)).all() == []
     assert session.exec(select(DailyLog)).all() == []
+    assert session.exec(select(RefreshToken)).all() == []
     login = api.post(
         "/auth/login", json={"email": "ada@example.com", "password": "correct horse"}
     )
-    assert login.status_code == 401
+    assert login.status_code == 400
+    assert login.json()["error"]["code"] == "invalid_credentials"
