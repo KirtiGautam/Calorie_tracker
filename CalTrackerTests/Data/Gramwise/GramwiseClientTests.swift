@@ -178,6 +178,35 @@ struct GramwiseClientTests {
         }
     }
 
+    @Test func signInRefusalsMapByCodeWhateverTheStatus() async throws {
+        // The backend answers 400 since it follows RFC 6749 §5.2. Older backends answered 401.
+        for status in [400, 401] {
+            let wrongPassword = MockHTTPClient(data: envelope("invalid_credentials"), statusCode: status)
+            let usedToken = MockHTTPClient(data: envelope("invalid_token"), statusCode: status)
+
+            await #expect(throws: GramwiseAPIError.invalidCredentials) {
+                try await client(wrongPassword).signIn(email: "ada@example.com", password: "wrong")
+            }
+            await #expect(throws: GramwiseAPIError.invalidToken) {
+                try await client(usedToken).refresh(refreshToken: "r")
+            }
+        }
+    }
+
+    @Test func signOutPostsTheRefreshToken() async throws {
+        let http = MockHTTPClient(data: Data(), statusCode: 204)
+
+        try await client(http).signOut(refreshToken: "r")
+
+        #expect(http.requests.first?.httpMethod == "POST")
+        #expect(http.requests.first?.url?.path() == "/auth/logout")
+    }
+
+    /// An error response body with `code`, as the backend sends it.
+    private func envelope(_ code: String) -> Data {
+        Data(#"{"error": {"code": "\#(code)", "message": "Refused", "details": null}}"#.utf8)
+    }
+
     @Test func deleteAccountSendsDelete() async throws {
         let http = MockHTTPClient(data: Data(), statusCode: 204)
 

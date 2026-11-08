@@ -142,7 +142,16 @@ nonisolated final class FakeGramwiseAPI: GramwiseAPI {
             else {
                 throw GramwiseAPIError.invalidToken
             }
+            // Like the real server, each refresh token works once.
+            state.refreshTokens[refreshToken] = nil
             return Self.issueTokens(for: account.user, in: &state)
+        }
+    }
+
+    func signOut(refreshToken: String) async throws {
+        try state.withLock { state in
+            try Self.begin("signOut", in: &state)
+            state.refreshTokens[refreshToken] = nil
         }
     }
 
