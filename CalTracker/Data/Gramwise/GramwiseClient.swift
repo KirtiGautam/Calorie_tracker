@@ -26,6 +26,19 @@ nonisolated struct GramwiseClient: GramwiseAPI {
         return try await send(request, decoding: GramwiseTokenPair.self)
     }
 
+    func signOut(refreshToken: String) async throws {
+        let request = try requests.makeRequest(
+            "POST",
+            path: "auth/logout",
+            body: GramwiseRefreshRequest(refreshToken: refreshToken),
+            timeout: Self.signOutTimeout
+        )
+        _ = try await perform(request)
+    }
+
+    /// How long sign-out waits for the server, short because the person is already signed out on the device.
+    static let signOutTimeout: TimeInterval = 10
+
     func deleteAccount(accessToken: String) async throws {
         let request = try requests.makeRequest("DELETE", path: "me", accessToken: accessToken)
         _ = try await perform(request)

@@ -295,6 +295,7 @@ struct SyncEngineTests {
         await device.sync()
 
         try await device.account.signOut()
+        #expect(server.calls.contains("signOut"))
         let bob = try await signUp("bob@example.com")
         try await device.account.signIn(email: "bob@example.com", password: "correct horse")
         await device.sync()

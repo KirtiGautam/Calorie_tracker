@@ -6,8 +6,11 @@ nonisolated protocol GramwiseAPI: Sendable {
     /// Signs in to an existing account and returns its tokens.
     func signIn(email: String, password: String) async throws -> GramwiseTokenPair
 
-    /// Exchanges a refresh token for a new pair.
+    /// Exchanges a refresh token for a new pair. Each refresh token works once.
     func refresh(refreshToken: String) async throws -> GramwiseTokenPair
+
+    /// Revokes `refreshToken` on the server, with every token it led to, so a copy of it can't keep the session alive.
+    func signOut(refreshToken: String) async throws
 
     /// Deletes the account with its goal and logs.
     func deleteAccount(accessToken: String) async throws

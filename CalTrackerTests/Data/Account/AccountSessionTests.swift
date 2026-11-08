@@ -196,6 +196,42 @@ struct AccountSessionTests {
         #expect(store.tokens == nil)
     }
 
+    @Test func signOutRevokesTheRefreshTokenOnTheServer() async throws {
+        let store = InMemoryTokenStore(tokens: oldTokens)
+        let http = MockHTTPClient(data: Data(), statusCode: 204)
+        let account = await restoredSession(http, store: store)
+
+        try await account.signOut()
+
+        let request = try #require(http.requests.first)
+        #expect(request.httpMethod == "POST")
+        #expect(request.url?.path() == "/auth/logout")
+        let body = try JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: String]
+        #expect(body == ["refresh_token": "old-refresh"])
+        #expect(request.timeoutInterval == GramwiseClient.signOutTimeout)
+    }
+
+    @Test func signOutOfflineStillSignsOut() async throws {
+        let store = InMemoryTokenStore(tokens: oldTokens)
+        let account = await restoredSession(MockHTTPClient(error: URLError(.notConnectedToInternet)), store: store)
+
+        try await account.signOut()
+
+        #expect(account.user == nil)
+        #expect(store.tokens == nil)
+    }
+
+    @Test func aFailedSignOutDoesNotRevokeTheTokens() async {
+        let store = FaultyTokenStore(tokens: oldTokens)
+        let http = MockHTTPClient(data: Data(), statusCode: 204)
+        let account = await restoredSession(http, store: store)
+        store.writeError = KeychainError(status: errSecNotAvailable)
+
+        _ = try? await account.signOut()
+
+        #expect(http.requests.isEmpty)
+    }
+
     @Test func deleteAccountSignsOut() async throws {
         let store = InMemoryTokenStore(tokens: oldTokens)
         let http = MockHTTPClient(data: Data(), statusCode: 204)
@@ -203,7 +239,8 @@ struct AccountSessionTests {
 
         try await account.deleteAccount()
 
-        #expect(http.requests.first?.httpMethod == "DELETE")
+        // Deleting the account invalidated its tokens, so sign-out doesn't ask to revoke them.
+        #expect(http.requests.map(\.httpMethod) == ["DELETE"])
         #expect(account.isSignedIn == false)
         #expect(store.tokens == nil)
     }

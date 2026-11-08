@@ -58,10 +58,18 @@ final class AccountSession {
         try await keep(try await api.signIn(email: email, password: password))
     }
 
-    /// Forgets the tokens. The log stays on the device.
+    /// Forgets the tokens, then asks the server to revoke the refresh token. The log stays on the device.
     ///
-    /// When the store can't remove them, the session stays signed in, so the next launch doesn't sign back in.
+    /// When the store can't remove the tokens, the session stays signed in, so the next launch doesn't sign back in.
+    /// The device is signed out before the server is asked, and a failed revocation, for example when offline, is
+    /// ignored: the refresh token then lasts until it expires, as it did before the server could revoke it.
     func signOut() async throws {
+        guard let refreshToken = try await forgetTokens()?.refreshToken else { return }
+        try? await api.signOut(refreshToken: refreshToken)
+    }
+
+    /// Signs out on this device only and returns the tokens it forgot, if any.
+    private func forgetTokens() async throws -> GramwiseTokenPair? {
         let previous = tokens
         set(nil)
         let signedOut = generation
@@ -73,6 +81,7 @@ final class AccountSession {
             }
             throw error
         }
+        return previous
     }
 
     /// Deletes the account and everything stored with it on the server, then signs out.
@@ -80,7 +89,8 @@ final class AccountSession {
         try await withAccessToken { [api] accessToken in
             try await api.deleteAccount(accessToken: accessToken)
         }
-        try await signOut()
+        // Deleting the account already invalidated its tokens, so there's nothing to revoke.
+        _ = try await forgetTokens()
     }
 
     /// Runs `operation` with the current access token, refreshing the tokens once if the server rejects it.
