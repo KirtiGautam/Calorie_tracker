@@ -26,20 +26,34 @@ def get(session: Session, user_id: uuid.UUID) -> UserGoal:
     return goal
 
 
+# How far ahead of the server's clock `updated_at` may be, to allow for a device clock that drifted.
+MAX_CLOCK_AHEAD = timedelta(minutes=5)
+
+
 def put(
     session: Session, user_id: uuid.UUID, goal_in: GoalIn, now: datetime | None = None
-) -> UserGoal:
-    """Saves `goal_in` as the goal from its `effective_from` day on, and returns the stored goal.
+) -> tuple[UserGoal, bool]:
+    """Saves `goal_in` as the goal from its `effective_from` day on.
 
-    A goal for a later day than the current one is added as a new row, so earlier days keep their
-    goal. One for the same day replaces it when it was saved later, and an identical save (a retry)
-    returns the stored goal unchanged. Anything older raises `GoalOutdated`, so a past day's goal
-    never changes. `now` is the current UTC time, which tests may pin.
+    Returns the stored goal, and whether it's the account's first. A goal for a later day than the
+    current one is added as a new row, so earlier days keep their goal. One for the same day replaces
+    it when it was saved later, and an identical save (a retry) returns the stored goal unchanged.
+    Anything older raises `GoalOutdated`, so a past day's goal never changes. `now` is the current
+    UTC time, which tests may pin.
+
+    The stored goal depends only on the request, never on when it arrives, so resending a PUT whose
+    response was lost can't change it (RFC 9110 §9.2.2).
     """
-    # A device clock set in the future would otherwise win every later comparison. Both are UTC.
-    updated_at = min(goal_in.updated_at, now or datetime.now(UTC))
+    updated_at = goal_in.updated_at
+    # A device clock set in the future would otherwise win every later comparison. Capping it at
+    # the server's clock would make the stored time depend on when each retry arrived, so it's
+    # refused instead, and accepted once the server's clock catches up.
+    if updated_at > (now or datetime.now(UTC)) + MAX_CLOCK_AHEAD:
+        raise InvalidGoalDate(
+            "updated_at is later than the server's clock. Check the device's date and time",
+            details={"updated_at": updated_at.isoformat()},
+        )
     # Time zones run from UTC-12 to UTC+14, so the device's day is within one day of the UTC day.
-    # This also stops a goal dated in the future from locking out every later save.
     saved_on = updated_at.date()
     one_day = timedelta(days=1)
     if not saved_on - one_day <= goal_in.effective_from <= saved_on + one_day:
@@ -71,7 +85,7 @@ def put(
         goal_in.effective_from == stored.effective_from
         and updated_at == stored.updated_at
     ):
-        return stored
+        return stored, False
     else:
         raise GoalOutdated(
             "A newer goal is already saved, and goals of past days can't change",
@@ -80,4 +94,4 @@ def put(
 
     session.commit()
     session.refresh(goal)
-    return goal
+    return goal, stored is None

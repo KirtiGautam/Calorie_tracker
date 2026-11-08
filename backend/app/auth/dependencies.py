@@ -20,7 +20,7 @@ def get_current_user(
 ) -> AppUser:
     """Loads the account named by the bearer access token."""
     if credentials is None:
-        raise InvalidToken("Missing bearer token")
+        raise InvalidToken("Missing bearer token", token_sent=False)
     return service.user_for_token(session, credentials.credentials, "access", settings)
 
 
