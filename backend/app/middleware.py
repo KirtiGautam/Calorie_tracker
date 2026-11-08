@@ -12,7 +12,7 @@ MAX_BODY_BYTES = 2 * 1024 * 1024
 
 # Responses from these path prefixes may be stored by caches. Everything else is personal data or
 # tokens.
-CACHEABLE_PREFIXES: tuple[str, ...] = ()
+CACHEABLE_PREFIXES = ("/usda/",)
 # Token responses also get `Pragma: no-cache`, as RFC 6749 §5.1 asks.
 TOKEN_PREFIXES = ("/auth/",)
 
@@ -58,7 +58,7 @@ class BodySizeLimitMiddleware:
 
 
 class CacheControlMiddleware:
-    """Marks every response that isn't public data as `Cache-Control: no-store`.
+    """Marks every response that isn't public food data as `Cache-Control: no-store`.
 
     Without it, `URLSession`'s cache could write an account, goal or day of logged foods to disk,
     where it would stay after sign-out. A route that sets its own `Cache-Control` keeps it.

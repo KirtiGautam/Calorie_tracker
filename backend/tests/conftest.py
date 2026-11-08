@@ -11,6 +11,8 @@ os.environ["FASTAPI_ENV"] = "production"
 os.environ["JWT_SECRET"] = "test-secret-that-is-long-enough-for-hs256-0123456789"
 os.environ["ACCESS_TOKEN_MINUTES"] = "30"
 os.environ["REFRESH_TOKEN_DAYS"] = "60"
+os.environ["USDA_API_KEY"] = "test-usda-key"
+os.environ["USDA_RATE_LIMIT_PER_HOUR"] = "120"
 
 import pytest
 from fastapi.testclient import TestClient
