@@ -11,7 +11,11 @@ class InvalidCredentials(AppError):
 
 
 class InvalidToken(AppError):
-    """A missing, malformed, expired or wrong-type token, or one for a deleted account."""
+    """A missing, malformed, expired or wrong-type access token, or one for a deleted account.
+
+    The challenge carries `error="invalid_token"` when a token was sent, and no error code when
+    none was (RFC 6750 §3.1).
+    """
 
     status_code = status.HTTP_401_UNAUTHORIZED
     code = "invalid_token"
@@ -20,5 +24,8 @@ class InvalidToken(AppError):
         self,
         message: str = "Invalid or expired token",
         details: dict[str, Any] | None = None,
+        *,
+        token_sent: bool = True,
     ) -> None:
-        super().__init__(message, details, headers={"WWW-Authenticate": "Bearer"})
+        challenge = 'Bearer error="invalid_token"' if token_sent else "Bearer"
+        super().__init__(message, details, headers={"WWW-Authenticate": challenge})

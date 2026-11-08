@@ -127,6 +127,14 @@ def test_me_rejects_refresh_token(api: TestClient) -> None:
     )
 
     assert response.status_code == 401
+    assert response.headers["WWW-Authenticate"] == 'Bearer error="invalid_token"'
+
+
+def test_me_without_a_token_gets_a_challenge_without_an_error(api: TestClient) -> None:
+    response = api.get("/me")
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "invalid_token"
     assert response.headers["WWW-Authenticate"] == "Bearer"
 
 
@@ -173,3 +181,36 @@ def test_me_rejects_token_with_bad_subject(api: TestClient) -> None:
     response = api.get("/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 401
+
+
+def test_signup_names_the_account_and_forbids_caching(api: TestClient) -> None:
+    response = api.post(
+        "/auth/signup", json={"email": "ada@example.com", "password": "correct horse"}
+    )
+
+    assert response.status_code == 201
+    assert response.headers["Location"] == "/me"
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["Pragma"] == "no-cache"
+
+
+def test_validation_errors_never_echo_the_password(api: TestClient) -> None:
+    response = api.post(
+        "/auth/signup", json={"email": "ada@example.com", "password": "hunter2"}
+    )
+
+    assert response.status_code == 422
+    assert "hunter2" not in response.text
+    assert all("input" not in error for error in response.json()["error"]["details"])
+
+
+@pytest.mark.parametrize("number", ["NaN", "Infinity", "-Infinity", "1e400"])
+def test_a_non_finite_number_is_a_422_not_a_500(api: TestClient, number: str) -> None:
+    response = api.post(
+        "/auth/signup",
+        content=f'{{"email": "z@example.com", "password": {number}}}',
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"

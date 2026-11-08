@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi.testclient import TestClient
@@ -40,7 +40,9 @@ def test_put_then_get_goal(api: TestClient) -> None:
     put = api.put("/me/goal", headers=headers, json=goal("2026-10-01T08:00:00Z"))
     get = api.get("/me/goal", headers=headers)
 
-    assert put.status_code == 200
+    # The first PUT creates the goal, so it's a 201 (RFC 9110 §9.3.4).
+    assert put.status_code == 201
+    assert get.headers["Cache-Control"] == "no-store"
     assert get.json() == put.json()
     assert get.json()["carbs_g"] is None
     assert get.json()["updated_at"].startswith("2026-10-01T08:00:00")
@@ -147,13 +149,13 @@ def test_effective_from_must_be_the_day_of_updated_at(api: TestClient) -> None:
         "/me/goal", headers=headers, json=goal("2026-10-09T08:00:00Z", "2026-10-11")
     )
 
-    assert west.status_code == 200
+    assert west.status_code == 201
     assert backdated.status_code == 422
     assert backdated.json()["error"]["code"] == "invalid_goal_date"
     assert ahead.status_code == 422
 
 
-def test_future_timestamp_is_clamped_to_now(api: TestClient) -> None:
+def test_an_updated_at_ahead_of_the_server_s_clock_is_refused(api: TestClient) -> None:
     headers = bearer(signup(api))
     today = datetime.now(UTC).date().isoformat()
 
@@ -161,8 +163,25 @@ def test_future_timestamp_is_clamped_to_now(api: TestClient) -> None:
         "/me/goal", headers=headers, json=goal("2999-01-01T00:00:00Z", today)
     )
 
-    assert response.status_code == 200
-    assert not response.json()["updated_at"].startswith("2999")
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "invalid_goal_date"
+
+
+def test_resending_a_put_from_a_clock_slightly_ahead_stores_the_same_goal(
+    api: TestClient,
+) -> None:
+    headers = bearer(signup(api))
+    ahead = datetime.now(UTC) + timedelta(minutes=2)
+    body = goal(ahead.isoformat().replace("+00:00", "Z"))
+
+    first = api.put("/me/goal", headers=headers, json=body)
+    retry = api.put("/me/goal", headers=headers, json=body)
+
+    # The stored goal depends only on the request, so a retry can't move it (RFC 9110 §9.2.2).
+    assert first.status_code == 201
+    assert retry.status_code == 200
+    assert retry.json() == first.json()
+    assert datetime.fromisoformat(first.json()["updated_at"]) == ahead
 
 
 def test_a_goal_dated_in_the_future_is_refused(api: TestClient) -> None:
@@ -215,5 +234,5 @@ def test_goals_are_per_user(api: TestClient) -> None:
     # Ada's later goal doesn't make Bob's earlier one outdated.
     assert (
         api.put("/me/goal", headers=bob, json=goal("2026-10-01T08:00:00Z")).status_code
-        == 200
+        == 201
     )

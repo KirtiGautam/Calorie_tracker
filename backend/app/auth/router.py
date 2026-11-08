@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 
 from app.auth import service
 from app.auth.schemas import LoginRequest, RefreshRequest, SignupRequest, TokenPair
@@ -20,10 +20,13 @@ router = APIRouter(
     responses=error_responses(status.HTTP_409_CONFLICT),
 )
 def signup(
-    body: SignupRequest, session: SessionDep, settings: SettingsDep
+    body: SignupRequest, session: SessionDep, settings: SettingsDep, response: Response
 ) -> TokenPair:
     """Creates an account and signs it in. Returns 409 `email_taken` for a used email, in any letter case."""
-    return service.signup(session, body.email, body.password, settings)
+    tokens = service.signup(session, body.email, body.password, settings)
+    # The account just created, which the new access token reads at /me.
+    response.headers["Location"] = "/me"
+    return tokens
 
 
 @router.post(
