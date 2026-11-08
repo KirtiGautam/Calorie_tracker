@@ -32,19 +32,36 @@ def signup(
 @router.post(
     "/login",
     summary="Sign in",
-    responses=error_responses(status.HTTP_401_UNAUTHORIZED),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST),
 )
 def login(body: LoginRequest, session: SessionDep, settings: SettingsDep) -> TokenPair:
-    """Returns 401 `invalid_credentials` for a wrong password or an unknown email alike."""
+    """Returns 400 `invalid_credentials` for a wrong password or an unknown email alike."""
     return service.login(session, body.email, body.password, settings)
 
 
 @router.post(
     "/refresh",
     summary="Exchange a refresh token for a new pair",
-    responses=error_responses(status.HTTP_401_UNAUTHORIZED),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST),
 )
 def refresh(
     body: RefreshRequest, session: SessionDep, settings: SettingsDep
 ) -> TokenPair:
+    """Each refresh token works once. Returns 400 `invalid_token` for one that's invalid, expired, revoked or used.
+
+    Presenting a used token again signs out every device that sign-in led to.
+    """
     return service.refresh(session, body.refresh_token, settings)
+
+
+@router.post(
+    "/logout",
+    summary="Sign out a refresh token",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def logout(body: RefreshRequest, session: SessionDep, settings: SettingsDep) -> None:
+    """Revokes the refresh token and every token it led to. Access tokens already issued last until they expire.
+
+    Returns 204 for an invalid or already revoked token too, since there's nothing left to revoke.
+    """
+    service.logout(session, body.refresh_token, settings)
