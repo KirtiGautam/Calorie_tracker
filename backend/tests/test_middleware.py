@@ -25,12 +25,12 @@ def test_a_chunked_body_is_refused_once_it_goes_over_the_limit(
     client: TestClient,
 ) -> None:
     def chunks() -> Iterator[bytes]:
-        yield b'{"email": "ada@example.com", "password": "'
+        yield b'{"fdc_ids": ['
         for _ in range(MAX_BODY_BYTES // 1024 + 1):
-            yield b"x" * 1024
+            yield b"1," * 512
 
     response = client.post(
-        "/auth/login", content=chunks(), headers={"Content-Type": "application/json"}
+        "/usda/foods", content=chunks(), headers={"Content-Type": "application/json"}
     )
 
     assert response.status_code == 413

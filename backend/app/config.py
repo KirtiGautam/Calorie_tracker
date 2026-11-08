@@ -8,12 +8,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 PLACEHOLDER_SECRET = "changethis"  # noqa: S105 - the value the validator rejects, not a secret
 # HS256 keys shorter than its 32-byte hash are easier to brute-force, and PyJWT warns about them.
 MIN_SECRET_BYTES = 32
+# USDA's shared public key, limited to far fewer requests than a real key. Never accepted.
+USDA_DEMO_KEY = "DEMO_KEY"
 
 
 class Settings(BaseSettings):
     """App settings, read from the environment and, for local runs, from `.env`."""
 
-    # hide_input_in_errors keeps JWT_SECRET and the password in DATABASE_URL out of startup errors.
+    # hide_input_in_errors keeps JWT_SECRET, USDA_API_KEY and the password in DATABASE_URL out of
+    # startup errors.
     model_config = SettingsConfigDict(
         env_file=".env",
         env_ignore_empty=True,
@@ -28,6 +31,25 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr
     access_token_minutes: int = Field(default=30, ge=1, le=24 * 60)
     refresh_token_days: int = Field(default=60, ge=1, le=365)
+    # Sent to USDA FoodData Central. Get one at https://fdc.nal.usda.gov/api-key-signup.
+    usda_api_key: SecretStr
+    # How many /usda requests one client (an IP address) can make per hour.
+    usda_rate_limit_per_hour: int = Field(default=120, ge=1)
+
+    @model_validator(mode="after")
+    def reject_unusable_usda_key(self) -> Self:
+        """Fails startup, in every environment, when the USDA key is blank or USDA's demo key."""
+        key = self.usda_api_key.get_secret_value().strip()
+        if not key:
+            raise ValueError(
+                "USDA_API_KEY is blank. Get a key at https://fdc.nal.usda.gov/api-key-signup."
+            )
+        if key.upper() == USDA_DEMO_KEY:
+            raise ValueError(
+                f"USDA_API_KEY can't be {USDA_DEMO_KEY}. "
+                "Get a key at https://fdc.nal.usda.gov/api-key-signup."
+            )
+        return self
 
     @model_validator(mode="after")
     def reject_weak_secret(self) -> Self:
