@@ -1,12 +1,6 @@
 // Shared build settings for every configuration.
-//
-// The USDA FoodData Central key defaults to the public, rate-limited DEMO_KEY.
-// To use your own free key, copy Secrets.xcconfig.example to Secrets.xcconfig
-// (which is gitignored) and set USDA_API_KEY there.
 
-USDA_API_KEY = DEMO_KEY
-
-// The Gramwise backend that accounts and sync talk to. The default is a backend running on
+// The Gramwise backend for USDA food search, accounts and sync. The default is a backend running on
 // this Mac (`docker compose up --build` in backend/). Put a deployed https URL in Secrets.xcconfig.
 // `$()` keeps xcconfig from reading `//` as the start of a comment.
 GRAMWISE_API_BASE_URL = http:/$()/localhost:8000

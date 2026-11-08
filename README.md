@@ -25,27 +25,17 @@ The app has no third-party dependencies.
 1. Clone the repository and open `CalTracker.xcodeproj`.
 2. Pick the **CalTracker** scheme and a simulator, then build and run.
 
-### USDA API key (optional)
+### Backend
 
-The app works out of the box with USDA's public `DEMO_KEY`, which is heavily rate limited. To use your own free key:
-
-1. Sign up at <https://fdc.nal.usda.gov/api-key-signup>.
-2. Copy `Config/Secrets.xcconfig.example` to `Config/Secrets.xcconfig`.
-3. Set `USDA_API_KEY` in the new file.
-
-`Config/Secrets.xcconfig` is gitignored. Never commit it.
-
-Open Food Facts doesn't need a key.
-
-### Backend (optional)
-
-Accounts and sync talk to the FastAPI service in [`backend/`](backend/README.md). By default the app expects it on this Mac at `http://localhost:8000`, which the simulator can reach. Start it with `docker compose up --build` in `backend/`, which also applies the database migrations. To point the app at a deployed backend, set `GRAMWISE_API_BASE_URL` in `Config/Secrets.xcconfig`, writing `//` as `/$()/` because xcconfig treats `//` as a comment:
+USDA food search, accounts and sync talk to the FastAPI service in [`backend/`](backend/README.md). By default the app expects it on this Mac at `http://localhost:8000`, which the simulator can reach. Start it with `docker compose up --build` in `backend/`, which also applies the database migrations. To point the app at a deployed backend, copy `Config/Secrets.xcconfig.example` to `Config/Secrets.xcconfig` (gitignored, never commit it) and set `GRAMWISE_API_BASE_URL`, writing `//` as `/$()/` because xcconfig treats `//` as a comment:
 
 ```
 GRAMWISE_API_BASE_URL = https:/$()/api.example.com
 ```
 
-Without a reachable backend the app works as before. The cloud just stays red, or turns orange if you were signed in.
+The backend holds the USDA API key, so the app doesn't have one. Set `USDA_API_KEY` in `backend/.env` ([get a free key](https://fdc.nal.usda.gov/api-key-signup)). Open Food Facts doesn't need a key, and the app calls it directly.
+
+Without a reachable backend the app still works. Your log stays on the device and Open Food Facts search works, but USDA results show an inline error. The cloud stays red, or turns orange if you were signed in.
 
 ## Running tests
 
@@ -60,7 +50,7 @@ xcodebuild test \
   -collect-test-diagnostics never
 ```
 
-UI tests live in `CalTrackerUITests` and drive the real app against the **live** food APIs, so they need a network connection and can be slow or flaky when an API is down. Run them with `-only-testing:CalTrackerUITests`.
+UI tests live in `CalTrackerUITests` and drive the real app against the **live** food APIs, so they need a network connection and can be slow or flaky when an API is down. USDA results come through the backend, so have it running too. Run them with `-scheme CalTrackerUITests` instead of `-only-testing:CalTrackerTests`.
 
 Swap `iPhone Duo` for any simulator you have installed (`xcrun simctl list devices available`).
 
@@ -83,7 +73,7 @@ CalTracker/
 CalTrackerTests/    Unit tests, mirroring the app's folders, plus fixtures and test doubles
 CalTrackerUITests/  End-to-end UI flows
 Config/             Build settings and the optional secrets file
-backend/            FastAPI + Supabase Postgres service for accounts and sync
+backend/            FastAPI + Supabase Postgres service for accounts, sync and USDA food search
 ```
 
 ## Contributing with AI agents

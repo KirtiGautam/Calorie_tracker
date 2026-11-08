@@ -1,12 +1,13 @@
 # Security and privacy review checklist
 
-Gramwise stores personal health data (food logs, body profile, goals) on device and calls two public APIs. It has no accounts or backend. Keep findings proportionate. There's no auth surface to review, but health data and the API key still matter.
+Gramwise stores personal health data (food logs, body profile, goals) on device, calls Open Food Facts directly, and calls the Gramwise backend for USDA food data and optional accounts. Keep findings proportionate, but health data and the backend's API key still matter.
 
 ## Secrets
 
-- `Config/Secrets.xcconfig` must not be in the diff. A real USDA key must not appear in any tracked file: Swift, plist, xcconfig, fixtures, tests or docs. Either is **Critical**, and the key must be rotated, not just deleted, because git history keeps it.
-- The key reaches code only through `Info.plist` (`USDAAPIKey`) from `USDA_API_KEY`. `DEMO_KEY` in `Base.xcconfig` is fine.
-- The USDA key travels in the request URL (`api_key=`). Any new logging of request URLs, `URLRequest` descriptions or error messages that embed the URL leaks it. That's a finding.
+- `Config/Secrets.xcconfig` and `backend/.env` must not be in the diff. A real USDA key must not appear in any tracked file: Swift, plist, xcconfig, Python, fixtures, tests or docs. Either is **Critical**, and the key must be rotated, not just deleted, because git history keeps it.
+- The USDA key lives only on the backend, as `USDA_API_KEY`. Any API key in the app (Swift, `Info.plist` or a build setting it references) can be read out of an installed build, and is **Critical**. `backend/.env.example` leaves `USDA_API_KEY` empty, and `config.py` refuses to start with a missing, blank or `DEMO_KEY` key in any environment. Weakening that check is High.
+- The backend sends the key to USDA in the `X-Api-Key` header, never the URL. Moving it to the URL, following redirects with it, or logging request headers is a finding.
+- The `/usda` routes are public on purpose, because food search works without an account. They must stay narrow: clients send only a query, a page or IDs, and a change that forwards other client input to USDA is a finding. So is removing the rate limit.
 - Test fixtures must not contain real keys copied from captured responses.
 
 ## Logging
@@ -35,14 +36,14 @@ Open Food Facts data is user-contributed and often incomplete or wrong. Treat ev
   - Reject or clamp negative values, NaN, infinity and absurd magnitudes (for example a 100 g serving with 90,000 kcal).
   - Make sure division by a zero serving size can't happen.
   - Check that unit conversions (kJ to kcal, mg to g, per serving to per 100 g) are right.
-- Check HTTP status before decoding. Non-2xx responses and rate limiting (USDA `DEMO_KEY` returns 429) map to a clear user message through `userMessage(for:)`.
+- Check HTTP status before decoding. Non-2xx responses and rate limiting (the backend's `/usda` routes and Open Food Facts can return 429) map to a clear user message through `userMessage(for:)`.
 - Strip or escape text from remote sources before using it in anything interpreted (URLs, predicates, attributed strings with links).
 
 ## Building requests
 
 - All endpoints use `https`. A new `http://` URL, or an `NSAppTransportSecurity` exception in Info.plist, is High unless the PR justifies it.
 - Build URLs with `URLComponents` and `setStrictlyEncodedQueryItems(_:)`, never by interpolating user input into a URL string. Barcodes are digits only, so validate them before use.
-- Set reasonable timeouts. Don't retry in a tight loop, which against a rate-limited `DEMO_KEY` causes a retry storm.
+- Set reasonable timeouts. Don't retry in a tight loop, which against a rate-limited API causes a retry storm, and every user shares the backend's USDA quota.
 
 ## Platform and privacy manifest
 

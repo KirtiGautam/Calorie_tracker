@@ -3,36 +3,36 @@ import Foundation
 /// Talks to the Gramwise backend over HTTP.
 nonisolated struct GramwiseClient: GramwiseAPI {
     private let httpClient: any HTTPClient
-    private let configuration: GramwiseConfiguration
+    private let requests: GramwiseRequestBuilder
 
     /// Creates a client that sends requests through `httpClient` to `configuration`'s backend.
     init(httpClient: any HTTPClient, configuration: GramwiseConfiguration) {
         self.httpClient = httpClient
-        self.configuration = configuration
+        self.requests = GramwiseRequestBuilder(configuration: configuration)
     }
 
     func signUp(email: String, password: String) async throws -> GramwiseTokenPair {
-        let request = try makeRequest("POST", path: "auth/signup", body: GramwiseCredentials(email: email, password: password))
+        let request = try requests.makeRequest("POST", path: "auth/signup", body: GramwiseCredentials(email: email, password: password))
         return try await send(request, decoding: GramwiseTokenPair.self)
     }
 
     func signIn(email: String, password: String) async throws -> GramwiseTokenPair {
-        let request = try makeRequest("POST", path: "auth/login", body: GramwiseCredentials(email: email, password: password))
+        let request = try requests.makeRequest("POST", path: "auth/login", body: GramwiseCredentials(email: email, password: password))
         return try await send(request, decoding: GramwiseTokenPair.self)
     }
 
     func refresh(refreshToken: String) async throws -> GramwiseTokenPair {
-        let request = try makeRequest("POST", path: "auth/refresh", body: GramwiseRefreshRequest(refreshToken: refreshToken))
+        let request = try requests.makeRequest("POST", path: "auth/refresh", body: GramwiseRefreshRequest(refreshToken: refreshToken))
         return try await send(request, decoding: GramwiseTokenPair.self)
     }
 
     func deleteAccount(accessToken: String) async throws {
-        let request = try makeRequest("DELETE", path: "me", accessToken: accessToken)
+        let request = try requests.makeRequest("DELETE", path: "me", accessToken: accessToken)
         _ = try await perform(request)
     }
 
     func goal(accessToken: String) async throws -> GramwiseGoal? {
-        let request = try makeRequest("GET", path: "me/goal", accessToken: accessToken)
+        let request = try requests.makeRequest("GET", path: "me/goal", accessToken: accessToken)
         do {
             return try await send(request, decoding: GramwiseGoal.self)
         } catch GramwiseAPIError.server(status: 404) {
@@ -41,51 +41,19 @@ nonisolated struct GramwiseClient: GramwiseAPI {
     }
 
     func putGoal(_ goal: GramwiseGoal, accessToken: String) async throws -> GramwiseGoal {
-        let request = try makeRequest("PUT", path: "me/goal", body: goal, accessToken: accessToken)
+        let request = try requests.makeRequest("PUT", path: "me/goal", body: goal, accessToken: accessToken)
         return try await send(request, decoding: GramwiseGoal.self)
     }
 
     func pushChanges(_ changes: GramwiseLogChanges, accessToken: String) async throws -> [GramwiseDailyLog] {
-        let request = try makeRequest("POST", path: "daily-logs/changes", body: changes, accessToken: accessToken)
+        let request = try requests.makeRequest("POST", path: "daily-logs/changes", body: changes, accessToken: accessToken)
         return try await send(request, decoding: GramwiseChangedDays.self).days
     }
 
     func dailyLogs(after cursor: String?, accessToken: String) async throws -> GramwiseDailyLogPage {
         let query = cursor.map { [URLQueryItem(name: "cursor", value: $0)] } ?? []
-        let request = try makeRequest("GET", path: "daily-logs", query: query, accessToken: accessToken)
+        let request = try requests.makeRequest("GET", path: "daily-logs", query: query, accessToken: accessToken)
         return try await send(request, decoding: GramwiseDailyLogPage.self)
-    }
-
-    /// Builds a request for `path` under the base URL, with a JSON body and bearer token when given.
-    func makeRequest(
-        _ method: String,
-        path: String,
-        query: [URLQueryItem] = [],
-        body: (any Encodable)? = nil,
-        accessToken: String? = nil
-    ) throws -> URLRequest {
-        guard var components = URLComponents(
-            url: configuration.baseURL.appending(path: path),
-            resolvingAgainstBaseURL: false
-        ) else {
-            throw APIError.invalidURL
-        }
-        if query.isEmpty == false {
-            components.setStrictlyEncodedQueryItems(query)
-        }
-        guard let url = components.url else { throw APIError.invalidURL }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        if let body {
-            request.httpBody = try GramwiseJSON.makeEncoder().encode(body)
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        }
-        if let accessToken {
-            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        }
-        return request
     }
 
     private func send<Response: Decodable & Sendable>(_ request: URLRequest, decoding type: Response.Type) async throws -> Response {

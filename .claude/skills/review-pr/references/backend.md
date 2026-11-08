@@ -8,7 +8,7 @@ Python 3.14, FastAPI 0.162, Pydantic v2, sync SQLModel on Supabase Postgres thro
 
 ## Hard "don'ts"
 
-- **No secrets (Critical).** `backend/.env` must never be in the diff, and neither may a real `DATABASE_URL` password or `JWT_SECRET` anywhere. `.env.example` holds placeholders only. Don't weaken the `config.py` check that refuses to start with `JWT_SECRET=changethis` outside development.
+- **No secrets (Critical).** `backend/.env` must never be in the diff, and neither may a real `DATABASE_URL` password or `JWT_SECRET` anywhere. `.env.example` holds placeholders only. Don't weaken the `config.py` checks that refuse to start with `JWT_SECRET=changethis` outside development, or with a missing, blank or `DEMO_KEY` `USDA_API_KEY` in any environment.
 - **Never edit a migration that has run (Critical).** A file in `backend/migrations/` that exists on the base and shows as modified, renamed or deleted breaks every deploy: `migrate.py` compares checksums and stops, and the API never starts. Check with `git diff --name-status <base>...HEAD -- backend/migrations/`. The fix is a new numbered file.
 - **No new dependencies without the owner's approval (High).** Look at `[project] dependencies` and `[dependency-groups]` in `pyproject.toml`, and at `uv.lock`. The production set is listed under "Image" in `backend/README.md`.
 - **No build output or caches.** Nothing from `.venv/`, `__pycache__/`, `.coverage`, `htmlcov/`, `.pytest_cache/` or `.ruff_cache/`.
@@ -39,7 +39,7 @@ Python 3.14, FastAPI 0.162, Pydantic v2, sync SQLModel on Supabase Postgres thro
 
 ## Security (`backend/SKILL.md` §12)
 
-- **Identity comes from the token.** Every route except `/health*` and `/auth/*` takes `CurrentUserDep`, and every query filters by `user.id`. A route that takes a user ID from the path, query or body, or that reads a row without checking whose it is, is High.
+- **Identity comes from the token.** Every route except `/health*`, `/auth/*` and `/usda/*` takes `CurrentUserDep`, and every query filters by `user.id`. The `/usda` routes are public on purpose and don't touch the database. Their guards are the per-IP rate limit and accepting only a query, a page or IDs, and removing either is High. A route that takes a user ID from the path, query or body, or that reads a row without checking whose it is, is High.
 - `jwt.decode` always passes `algorithms=[...]`. Access and refresh tokens are checked for their type (`security.decode_token(…, "access", …)`).
 - Login with an unknown email still verifies a dummy hash, so response timing doesn't reveal which emails have accounts. Don't remove it.
 - **Bound every input (High when missing).** Every `str` has `max_length`, every list has `max_length` (see `MAX_CHANGES`, `MAX_FOODS_PER_DAY`), numbers have ranges, and list endpoints take a `limit` with `le=100` and a cursor.

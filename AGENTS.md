@@ -8,7 +8,7 @@ Guidance for AI coding agents working in this repository. Read [README.md](READM
 - **Platforms:** iOS and iPadOS 27.0, iPhone and iPad (including iPhone Duo and resizable windows). Don't change the deployment target.
 - **Toolchain:** Xcode 27.1, Swift 6, `SWIFT_STRICT_CONCURRENCY = complete`, `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, approachable concurrency on.
 - **Dependencies:** none in the app. Don't add any third-party package without asking.
-- **Backend:** `backend/` is a separate FastAPI service for accounts and sync. See [Backend](#backend).
+- **Backend:** `backend/` is a separate FastAPI service for accounts, sync and USDA food search. See [Backend](#backend).
 - **Project file:** the targets use file system synchronized groups, so new files under `CalTracker/`, `CalTrackerTests/` or `CalTrackerUITests/` are picked up automatically. Don't add file references to `project.pbxproj` by hand.
 
 ## Commands
@@ -28,12 +28,12 @@ NSUnbufferedIO=YES xcodebuild test -project CalTracker.xcodeproj -scheme CalTrac
   -only-testing:CalTrackerTests -collect-test-diagnostics never
 ```
 
-UI tests (slow, hit the live USDA and Open Food Facts APIs):
+UI tests (slow, hit the live Open Food Facts API and, through the backend the app is configured to use, USDA):
 
 ```sh
-NSUnbufferedIO=YES xcodebuild test -project CalTracker.xcodeproj -scheme CalTracker \
+NSUnbufferedIO=YES xcodebuild test -project CalTracker.xcodeproj -scheme CalTrackerUITests \
   -destination 'platform=iOS Simulator,name=iPhone Duo' \
-  -only-testing:CalTrackerUITests -collect-test-diagnostics never
+  -collect-test-diagnostics never
 ```
 
 **Always pass `-collect-test-diagnostics never`.** Without it, a run with a failing test can hang and never exit.
@@ -46,7 +46,7 @@ If `iPhone Duo` isn't installed, pick another simulator from `xcrun simctl list 
 - `Domain/`: plain `nonisolated` value types and pure logic (`Nutrient`, `NutrientProfile`, `DailyTotals`, `TargetCalculator`, and so on). No SwiftUI, SwiftData or networking here.
 - `Data/`: anything that talks to the outside world.
   - `Networking/HTTPClient` is a one-method protocol that `URLSession` conforms to. Clients take it as a dependency so tests can inject `MockHTTPClient`.
-  - `USDA/` and `OpenFoodFacts/` each have a client, response DTOs and a mapper that turns DTOs into `FoodItem`.
+  - `USDA/` and `OpenFoodFacts/` each have a client, response DTOs and a mapper that turns DTOs into `FoodItem`. `USDAClient` goes through the Gramwise backend, which holds the USDA key. `OpenFoodFactsClient` calls Open Food Facts directly, which needs no key.
   - `Search/CombinedFoodSearch` queries both sources in a task group and keeps each source's `Result`, so one failing source never hides the other.
   - `Persistence/` is SwiftData with a versioned schema (`SchemaV1`) and `CalTrackerMigrationPlan`. `FoodLogging` is the protocol view models write through. `FoodLogStore` is the real implementation.
   - `Targets/TargetsStore` keeps targets, body profile and goal in `UserDefaults` as JSON under the `targets.*` keys.
@@ -76,7 +76,7 @@ If `iPhone Duo` isn't installed, pick another simulator from `xcrun simctl list 
 
 ## Backend
 
-`backend/` is a FastAPI service on Supabase Postgres for accounts and sync, written in Python 3.14 and run entirely in Docker. The iOS rules above don't apply there. Read [backend/README.md](backend/README.md) for its setup, routes and rules, and [backend/SKILL.md](backend/SKILL.md) for the FastAPI coding guidelines. Where those two disagree, the README wins.
+`backend/` is a FastAPI service on Supabase Postgres for accounts, sync and USDA food search, written in Python 3.14 and run entirely in Docker. The iOS rules above don't apply there. Read [backend/README.md](backend/README.md) for its setup, routes and rules, and [backend/SKILL.md](backend/SKILL.md) for the FastAPI coding guidelines. Where those two disagree, the README wins.
 
 Checks (run from `backend/` after every backend change; both need Docker running):
 
@@ -86,14 +86,14 @@ Checks (run from `backend/` after every backend change; both need Docker running
 ```
 
 - **Migrations:** every schema change is the next numbered SQL file in `backend/migrations/`, with the SQLModel models updated to match. Never edit a migration that has run, and enable row level security on every new table.
-- **API contract:** the app's client for this service is `CalTracker/Data/Gramwise/`, used by `Data/Account/` and `Data/Sync/`. When a route, field or error code changes, update both sides in the same change, plus the route table in `backend/README.md`. Installed app builds keep calling the old API, so add new fields as optional and don't rename or remove error codes.
+- **API contract:** the app has two clients for this service: `CalTracker/Data/Gramwise/`, used by `Data/Account/` and `Data/Sync/`, and `CalTracker/Data/USDA/USDAClient`. When a route, field or error code changes, update both sides in the same change, plus the route table in `backend/README.md`. Installed app builds keep calling the old API, so add new fields as optional and don't rename or remove error codes.
 - **Dependencies:** they're locked in `backend/pyproject.toml` and `backend/uv.lock`. Ask before adding one, as for the app.
 
 ## Secrets
 
-- The USDA key comes from `USDA_API_KEY` in `Config/Base.xcconfig`, which defaults to `DEMO_KEY`. It can be overridden in `Config/Secrets.xcconfig`, which is gitignored, and reaches the app through `Info.plist` as `USDAAPIKey`.
-- Never commit `Config/Secrets.xcconfig` or write a real key into any tracked file.
-- The backend reads `DATABASE_URL` and `JWT_SECRET` from `backend/.env`, which is gitignored. Never commit it. `backend/.env.example` holds placeholders only.
+- Never put an API key in the app. Anything in `Info.plist`, or in a build setting it references, can be read out of an installed build. The app reaches keyed services through the backend.
+- `Config/Secrets.xcconfig` is gitignored and holds local build settings such as `GRAMWISE_API_BASE_URL`. Never commit it or write a real key into any tracked file.
+- The backend reads `DATABASE_URL`, `JWT_SECRET` and `USDA_API_KEY` from `backend/.env`, which is gitignored. Never commit it. `backend/.env.example` holds placeholders only.
 
 ## Git
 
