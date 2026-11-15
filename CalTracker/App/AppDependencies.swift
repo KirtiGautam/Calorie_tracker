@@ -12,6 +12,9 @@ struct AppDependencies {
     /// Where logged foods are read back, for quick add.
     let foodHistory: any FoodHistory
 
+    /// The foods the person entered themselves.
+    let customFoods: any CustomFoodStoring
+
     /// The person's daily targets and goal.
     let targets: TargetsStore
 
@@ -81,6 +84,7 @@ struct AppDependencies {
             foodSearch: CombinedFoodSearch(usda: usda, openFoodFacts: openFoodFacts),
             foodLog: foodLog,
             foodHistory: foodLog,
+            customFoods: CustomFoodStore(modelContext: modelContext),
             targets: targets,
             searchPreferences: SearchPreferencesStore(defaults: defaults),
             account: account,
