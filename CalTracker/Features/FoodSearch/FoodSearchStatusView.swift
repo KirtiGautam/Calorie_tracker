@@ -1,6 +1,9 @@
 import SwiftUI
 
-/// The overlay shown over the results list when there's nothing to list yet.
+/// What the search screen shows when the databases have nothing to list yet: a prompt, progress, or why there are
+/// no results, with a way to add the food yourself.
+///
+/// It's an overlay over the empty results list, or a row in the list when the person's own foods fill it.
 struct FoodSearchStatusView: View {
     /// What the search screen shows.
     let state: FoodSearchState
@@ -11,7 +14,10 @@ struct FoodSearchStatusView: View {
     /// Turns the filters off from the empty state.
     var onClearFilters: () -> Void = {}
 
-    /// Whether to prompt for a search before one starts. It's off while frequent foods fill the list instead.
+    /// Opens the sheet for entering a custom food, from the empty and failed states.
+    var onAddCustomFood: () -> Void = {}
+
+    /// Whether to prompt for a search before one starts. It's off while other sections fill the list instead.
     var showsIdleMessage = true
 
     var body: some View {
@@ -30,6 +36,7 @@ struct FoodSearchStatusView: View {
             EmptyView()
         case .loading:
             ProgressView()
+                .frame(maxWidth: .infinity)
         case .failed(let message):
             ContentUnavailableView {
                 Label {
@@ -39,6 +46,8 @@ struct FoodSearchStatusView: View {
                 }
             } description: {
                 Text(message)
+            } actions: {
+                Button(.addCustomFoodAction, systemImage: "plus", action: onAddCustomFood)
             }
         case .loaded(let results) where results.hasNoMatches && filtersActive:
             ContentUnavailableView {
@@ -51,9 +60,21 @@ struct FoodSearchStatusView: View {
                 Text(.searchFilteredEmptyMessage(state.query))
             } actions: {
                 Button(.clearFiltersAction, action: onClearFilters)
+                Button(.addCustomFoodAction, systemImage: "plus", action: onAddCustomFood)
             }
         case .loaded(let results) where results.hasNoMatches:
-            ContentUnavailableView.search(text: state.query)
+            // Like `ContentUnavailableView.search(text:)`, which can't offer an action.
+            ContentUnavailableView {
+                Label {
+                    Text(.searchNoResultsTitle)
+                } icon: {
+                    Image(systemName: "magnifyingglass")
+                }
+            } description: {
+                Text(.searchNoResultsMessage(state.query))
+            } actions: {
+                Button(.addCustomFoodAction, systemImage: "plus", action: onAddCustomFood)
+            }
         case .loaded:
             EmptyView()
         }

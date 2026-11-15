@@ -5,6 +5,7 @@ A calorie and macro tracker for iPhone and iPad. Search for a food, log how many
 ## Features
 
 - **Food search** across [USDA FoodData Central](https://fdc.nal.usda.gov) (whole foods) and [Open Food Facts](https://world.openfoodfacts.org) (packaged products). Both sources are queried in parallel, and if one fails the other's results still show. More results load as you scroll, and Open Food Facts products can be filtered by country (defaulting to your region) and brand, while USDA whole foods always appear.
+- **Custom foods.** When search doesn't have a food, add it yourself from Add Food, or from the no-results or offline screen. Enter its nutrition for any weight (one serving, a whole batch, or 100 g as on a label), in kcal or kJ and in the units on the label. The app converts it to per 100 g, calculates blank energy from protein, carbs and fat, and refuses values no food could have. Your foods are listed under My Foods and matched as you type, offline. Logged custom foods sync with their macros, and the list itself stays on the device.
 - **Log by weight.** Enter grams or tap a preset, and the nutrients are scaled for you.
 - **Quick add.** Before you type a search, Add Food lists the 8 foods you logged on the most days in the last 30. Tap one to log it starting from the amount you used last time, or tap its + to log that amount straight away, with Undo on the confirmation. It works offline.
 - **Today at a glance.** Energy, protein, carbs and fat with progress bars against your targets, plus a micronutrient breakdown and a line of encouragement based on how your day is going.
@@ -67,6 +68,7 @@ CalTracker/
     Today/        Root screen with totals and the day's log
     FoodSearch/   Search across both sources
     LogFood/      Choose an amount and log it
+    CustomFood/   Enter a food yourself and standardize it to per 100 g
     Targets/      Edit targets or calculate them from a body profile
     Account/      Create an account, sign in, and manage sync
     Shared/       Views used by several features
