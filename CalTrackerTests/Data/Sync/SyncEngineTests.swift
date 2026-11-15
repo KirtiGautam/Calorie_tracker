@@ -65,6 +65,32 @@ struct SyncEngineTests {
         #expect(server.dayKeys(for: tokens.user).isEmpty)
     }
 
+    @Test func customFoodsSyncAndRestoreWithTheirMacros() async throws {
+        let tokens = try await signUp()
+        let phone = SyncTestDevice(server: server, tokens: tokens)
+        let dal = FoodItem.fixture(
+            id: "cus-0f8fad5bd9cb469fa16570867728950e",
+            name: "Grandma's dal",
+            source: .custom,
+            per100g: NutrientProfile(energy: 120, protein: 6, carbohydrates: 15, fat: 4, iron: 2)
+        )
+        try phone.store.log(dal, grams: 350, loggedAt: breakfast)
+        await phone.sync()
+        let lookup = StubFoodLookup()
+        let reinstalled = SyncTestDevice(server: server, tokens: tokens, lookup: lookup)
+
+        await reinstalled.sync()
+
+        #expect(try phone.entries().first?.syncedDay == breakfastDay)
+        let restored = try #require(try reinstalled.entries().first)
+        #expect(restored.foodID == dal.id)
+        #expect(restored.name == "Grandma's dal")
+        #expect(restored.source == .custom)
+        expectApproximately(restored.nutrients.energy, 420, tolerance: 1e-6)
+        expectApproximately(restored.per100g.protein, 6, tolerance: 1e-6)
+        #expect(restored.per100g.iron == nil, "Micronutrients of a custom food stay on the device that entered it")
+    }
+
     @Test func entriesFromSchemaVersion1GetASyncIDBeforeTheirFirstPush() async throws {
         let tokens = try await signUp()
         let device = SyncTestDevice(server: server, tokens: tokens)

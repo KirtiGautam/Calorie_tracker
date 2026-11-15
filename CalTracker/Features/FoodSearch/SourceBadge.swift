@@ -15,5 +15,6 @@ struct SourceBadge: View {
     VStack {
         SourceBadge(source: .usda)
         SourceBadge(source: .openFoodFacts)
+        SourceBadge(source: .custom)
     }
 }

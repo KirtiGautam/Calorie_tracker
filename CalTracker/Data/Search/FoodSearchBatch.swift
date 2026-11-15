@@ -6,18 +6,20 @@ nonisolated struct FoodSearchBatch: Sendable {
     /// Open Food Facts' page, or `nil` when it wasn't asked because it had no more pages.
     var openFoodFacts: Result<FoodSearchPage, any Error>?
 
-    /// The outcome for `source`.
+    /// The outcome for `source`. Custom foods aren't searched remotely, so `.custom` is always `nil`.
     subscript(source: FoodSource) -> Result<FoodSearchPage, any Error>? {
         get {
             switch source {
             case .usda: usda
             case .openFoodFacts: openFoodFacts
+            case .custom: nil
             }
         }
         set {
             switch source {
             case .usda: usda = newValue
             case .openFoodFacts: openFoodFacts = newValue
+            case .custom: break
             }
         }
     }

@@ -14,7 +14,7 @@ extension SyncEngine {
     /// The most foods the server keeps for one day, counting every device's foods.
     static let maxFoodsPerDay = 200
 
-    /// Whether the server accepts `entry`: a USDA or Open Food Facts food ID it allows and an amount it allows.
+    /// Whether the server accepts `entry`: a USDA, Open Food Facts or custom food ID it allows and an amount it allows.
     static func isSyncable(_ entry: FoodLogEntry) -> Bool {
         FoodSource(foodID: entry.foodID)?.code(fromFoodID: entry.foodID)?.wholeMatch(of: /[A-Za-z0-9]+/) != nil
             && entry.foodID.unicodeScalars.count <= maxFoodIDLength
@@ -42,7 +42,8 @@ extension SyncEngine {
     /// Rebuilds the food for a restored entry.
     ///
     /// Micronutrients come from the provider's current data when the lookup found it. The macros always come from
-    /// the logged item, scaled back to 100 g, so the day's totals match what was logged.
+    /// the logged item, scaled back to 100 g, so the day's totals match what was logged. Custom foods aren't looked
+    /// up, so they come back with their macros only.
     static func restoredFood(from food: GramwiseLoggedFood, provider: FoodItem?) -> FoodItem {
         var per100g = provider?.per100g ?? NutrientProfile()
         let factor = food.grams > 0 ? 100 / food.grams : 0

@@ -27,15 +27,15 @@ nonisolated struct FoodSearchResults: Sendable {
     ///
     /// A source that failed or wasn't asked stops paging, and its failure is kept in `failures`.
     init(firstBatch batch: FoodSearchBatch) {
-        let failures = FoodSource.allCases.compactMap { source -> SourceFailure? in
+        let failures = FoodSource.databases.compactMap { source -> SourceFailure? in
             guard case .failure(let error) = batch[source] else { return nil }
             return SourceFailure(source: source, error: error)
         }
         self.failures = failures
         brands = (try? batch.openFoodFacts?.get())?.brands ?? []
-        errorIfAllFailed = failures.count == FoodSource.allCases.count ? failures.first?.error : nil
+        errorIfAllFailed = failures.count == FoodSource.databases.count ? failures.first?.error : nil
 
-        for source in FoodSource.allCases where batch[source] == nil || failures.contains(where: { $0.source == source }) {
+        for source in FoodSource.databases where batch[source] == nil || failures.contains(where: { $0.source == source }) {
             cursor[source] = nil
         }
         append(batch)
@@ -61,7 +61,7 @@ nonisolated struct FoodSearchResults: Sendable {
     mutating func append(_ batch: FoodSearchBatch) -> [SourceFailure] {
         var failures: [SourceFailure] = []
         var pages: [[FoodItem]] = []
-        for source in FoodSource.allCases {
+        for source in FoodSource.databases {
             switch batch[source] {
             case .success(let page):
                 if let current = cursor[source] {
