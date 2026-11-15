@@ -11,6 +11,21 @@ struct LogFoodViewModelTests {
         #expect(viewModel.isValid)
     }
 
+    @Test func startsAtTheGivenAmount() {
+        let viewModel = LogFoodViewModel(food: food, foodLog: SpyFoodLogging(), grams: 120)
+
+        #expect(viewModel.grams == 120)
+        #expect(viewModel.preview.energy == 240)
+    }
+
+    @Test func confirmationsFromTheSheetOfferNoUndo() throws {
+        let viewModel = LogFoodViewModel(food: food, foodLog: SpyFoodLogging())
+
+        let loggedFood = try viewModel.log()
+
+        #expect(loggedFood.undoableEntry == nil)
+    }
+
     @Test(arguments: zip(
         [-1.0, 0, 0.1, 100, 5_000, .infinity, .nan],
         [false, false, true, true, true, false, false]

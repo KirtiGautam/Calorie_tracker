@@ -11,9 +11,12 @@ final class SpyFoodLogging: FoodLogging {
     /// When set, every call throws this error instead of recording.
     var errorToThrow: (any Error)?
 
-    func log(_ food: FoodItem, grams: Double) throws {
+    /// Records the call and returns a new, unsaved entry for it.
+    @discardableResult
+    func log(_ food: FoodItem, grams: Double) throws -> FoodLogEntry {
         if let errorToThrow { throw errorToThrow }
         loggedCalls.append((food, grams))
+        return FoodLogEntry(food: food, grams: grams, loggedAt: .now)
     }
 
     func delete(_ entry: FoodLogEntry) throws {

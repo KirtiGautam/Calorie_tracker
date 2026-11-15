@@ -11,9 +11,12 @@ struct FoodSearchStatusView: View {
     /// Turns the filters off from the empty state.
     var onClearFilters: () -> Void = {}
 
+    /// Whether to prompt for a search before one starts. It's off while frequent foods fill the list instead.
+    var showsIdleMessage = true
+
     var body: some View {
         switch state.results {
-        case .idle:
+        case .idle where showsIdleMessage:
             ContentUnavailableView {
                 Label {
                     Text(.searchIdleTitle)
@@ -23,6 +26,8 @@ struct FoodSearchStatusView: View {
             } description: {
                 Text(.searchIdleMessage)
             }
+        case .idle:
+            EmptyView()
         case .loading:
             ProgressView()
         case .failed(let message):

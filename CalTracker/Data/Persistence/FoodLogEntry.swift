@@ -62,12 +62,28 @@ extension SchemaV2 {
             per100g.scaled(byGrams: grams)
         }
 
+        /// The entry as plain values, with the food rebuilt from what was stored when it was logged.
+        var record: FoodLogRecord {
+            FoodLogRecord(
+                food: FoodItem(id: foodID, name: name, brand: brand, source: source, per100g: per100g),
+                grams: grams,
+                loggedAt: loggedAt
+            )
+        }
+
         /// Matches entries logged on the same calendar day as `date`.
         static func loggedOnSameDay(as date: Date, calendar: Calendar) -> Predicate<FoodLogEntry> {
             let start = calendar.startOfDay(for: date)
             let end = startOfNextDay(after: start, calendar: calendar)
             return #Predicate<FoodLogEntry> { entry in
                 entry.loggedAt >= start && entry.loggedAt < end
+            }
+        }
+
+        /// Matches entries logged at or after `start`.
+        static func loggedSince(_ start: Date) -> Predicate<FoodLogEntry> {
+            #Predicate<FoodLogEntry> { entry in
+                entry.loggedAt >= start
             }
         }
 
