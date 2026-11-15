@@ -14,7 +14,8 @@ class LoggedFood(BaseModel):
     """One food in a day. The macros are for the amount eaten, and `None` means unknown."""
 
     entry_id: uuid.UUID
-    food_id: str = Field(max_length=64, pattern=r"^(usda|off)-[A-Za-z0-9]+$")
+    # `cus-` foods were entered by the person, so they can't be looked up and restore from `name` and the macros.
+    food_id: str = Field(max_length=64, pattern=r"^(usda|off|cus)-[A-Za-z0-9]+$")
     # The fallback when the food can no longer be looked up.
     name: str = Field(min_length=1, max_length=500)
     grams: float = Field(gt=0, le=5000)

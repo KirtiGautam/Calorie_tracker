@@ -98,10 +98,23 @@ def test_changes_store_logged_at_in_utc(api: TestClient) -> None:
     assert day["foods"][0]["logged_at"] == "2026-10-29T08:15:00Z"
 
 
+def test_changes_accept_custom_foods(api: TestClient) -> None:
+    headers = bearer(signup(api))
+    dal = food(food_id="cus-0f8fad5bd9cb469fa16570867728950e", name="Grandma's dal")
+
+    response = api.post("/daily-logs/changes", headers=headers, json={"added": [dal]})
+
+    assert response.status_code == 200
+    [day] = response.json()["days"]
+    assert day["foods"][0]["food_id"] == dal["food_id"]
+
+
 def test_changes_validate_items(api: TestClient) -> None:
     headers = bearer(signup(api))
     bad = [
         food(food_id="sample-oats"),
+        food(food_id="custom-oats"),
+        food(food_id="cus-"),
         food(grams=0),
         food(grams=5001),
         food(logged_at="2026-10-29T08:15:00"),
