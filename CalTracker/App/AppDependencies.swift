@@ -42,6 +42,16 @@ struct AppDependencies {
         LogFoodViewModel(food: food, foodLog: foodLog, grams: grams)
     }
 
+    /// Creates a view model for the person's own foods, listed on the search screen.
+    func makeCustomFoodsViewModel() -> CustomFoodsViewModel {
+        CustomFoodsViewModel(store: customFoods)
+    }
+
+    /// Creates a view model for entering a custom food, with its name starting as `name`.
+    func makeCustomFoodViewModel(name: String) -> CustomFoodViewModel {
+        CustomFoodViewModel(store: customFoods, name: name)
+    }
+
     /// Creates a view model for editing the daily targets.
     func makeTargetsViewModel() -> TargetsViewModel {
         TargetsViewModel(store: targets)

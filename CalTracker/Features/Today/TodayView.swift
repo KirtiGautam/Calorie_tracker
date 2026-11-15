@@ -77,10 +77,13 @@ struct TodayView: View {
                     FoodSearchView(
                         viewModel: dependencies.makeSearchViewModel(),
                         frequentFoods: dependencies.makeFrequentFoodsViewModel(),
+                        customFoods: dependencies.makeCustomFoodsViewModel(),
                         onSelect: showLogFood,
                         onSelectFrequent: showLogFrequentFood,
                         onLogged: didLog,
-                        onShowFilters: showSearchFilters
+                        onShowFilters: showSearchFilters,
+                        onSelectCustom: showLogCustomFood,
+                        onAddCustomFood: showCustomFood
                     )
                 }
             }
@@ -105,6 +108,10 @@ struct TodayView: View {
                     brandOptions: viewModel.brandOptions,
                     onApply: viewModel.applyFilters
                 )
+            case .customFood(let name, let library):
+                CustomFoodView(viewModel: dependencies.makeCustomFoodViewModel(name: name)) { record in
+                    didSaveCustomFood(record, library: library)
+                }
             }
         }
         .sensoryFeedback(.success, trigger: confirmation) { _, newValue in
@@ -160,6 +167,21 @@ struct TodayView: View {
 
     private func showSearchFilters(for viewModel: FoodSearchViewModel) {
         sheet = .searchFilters(viewModel)
+    }
+
+    /// Opens the log sheet for one of the person's own foods at the weight they entered its values for.
+    private func showLogCustomFood(_ record: CustomFoodRecord) {
+        sheet = .logFood(record.food, grams: record.servingGrams)
+    }
+
+    private func showCustomFood(name: String, library: CustomFoodsViewModel) {
+        sheet = .customFood(name: name, library: library)
+    }
+
+    /// Lists the new food on the search screen and replaces the custom food sheet with the log sheet for it.
+    private func didSaveCustomFood(_ record: CustomFoodRecord, library: CustomFoodsViewModel) {
+        library.reload()
+        showLogCustomFood(record)
     }
 
     /// Returns to Today behind the closing sheet and confirms what was logged.

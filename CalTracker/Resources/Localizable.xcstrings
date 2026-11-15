@@ -145,6 +145,18 @@
         }
       }
     },
+    "addCustomFoodAction" : {
+      "comment" : "Button on the Add Food screen that opens a form for entering a food that search doesn't have, with its nutrition from a label or recipe.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Custom Food"
+          }
+        }
+      }
+    },
     "addFood" : {
       "comment" : "Toolbar button on the Today screen that opens food search.",
       "extractionState" : "manual",
@@ -369,6 +381,162 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create Account"
+          }
+        }
+      }
+    },
+    "customFoodBarAction" : {
+      "comment" : "Short button title beside Filters on the Add Food screen. It opens a form for entering a food yourself. VoiceOver reads “Add Custom Food” instead.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom Food"
+          }
+        }
+      }
+    },
+    "customFoodDeleteFailedTitle" : {
+      "comment" : "Alert title when one of the person's own foods couldn't be deleted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Delete Food"
+          }
+        }
+      }
+    },
+    "customFoodEnergyFooter" : {
+      "comment" : "Footer under the custom food's energy and macro fields.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave energy blank to calculate it from protein, carbs and fat."
+          }
+        }
+      }
+    },
+    "customFoodMacrosSection" : {
+      "comment" : "Section header above the custom food's energy, protein, carbohydrate and fat fields.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energy and Macros"
+          }
+        }
+      }
+    },
+    "customFoodNameField" : {
+      "comment" : "Label for the custom food's name field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "customFoodNamePrompt" : {
+      "comment" : "Placeholder in the custom food's name field, an example of a home-cooked food.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homemade dal"
+          }
+        }
+      }
+    },
+    "customFoodPreviewSection" : {
+      "comment" : "Section header above the custom food's nutrients converted to 100 grams.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Per 100 g"
+          }
+        }
+      }
+    },
+    "customFoodSaveFailedTitle" : {
+      "comment" : "Alert title when a custom food couldn't be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t Save Food"
+          }
+        }
+      }
+    },
+    "customFoodTitle" : {
+      "comment" : "Navigation title of the form for entering a food yourself.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom Food"
+          }
+        }
+      }
+    },
+    "customFoodUnitPicker" : {
+      "comment" : "Accessibility label for the menu that picks the unit a nutrient is entered in. %1$@ is the nutrient's name, such as “Energy”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unit for %1$@"
+          }
+        }
+      }
+    },
+    "customFoodWeightField" : {
+      "comment" : "Label for the weight, in grams, that the entered nutrition values are for.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weight"
+          }
+        }
+      }
+    },
+    "customFoodWeightFooter" : {
+      "comment" : "Footer under the custom food's weight field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the nutrition for this weight: one serving, a whole batch, or 100 g as on most labels. It’s converted to per 100 g."
+          }
+        }
+      }
+    },
+    "customFoodsSection" : {
+      "comment" : "Section header on the Add Food screen above the foods the person entered themselves.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Foods"
           }
         }
       }
@@ -950,7 +1118,7 @@
       }
     },
     "micronutrientsTitle" : {
-      "comment" : "Disclosure label that expands today's micronutrient totals.",
+      "comment" : "Disclosure label that expands today's micronutrient totals, or the micronutrient fields of a custom food.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1382,7 +1550,7 @@
       }
     },
     "saveAction" : {
-      "comment" : "Button that saves the daily targets. Verb.",
+      "comment" : "Button that saves the daily targets or a custom food. Verb.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1497,6 +1665,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loading more results"
+          }
+        }
+      }
+    },
+    "searchNoResultsMessage" : {
+      "comment" : "Message shown when a search finds nothing. %1$@ is the search text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matched “%1$@”. Check the spelling, or add the food yourself."
+          }
+        }
+      }
+    },
+    "searchNoResultsTitle" : {
+      "comment" : "Title shown when a search finds nothing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Results"
           }
         }
       }

@@ -12,6 +12,9 @@ enum TodaySheet: Identifiable {
     /// Narrow a food search by country and brand, applying the changes to its view model.
     case searchFilters(FoodSearchViewModel)
 
+    /// Enter a custom food with its name starting as `name`, reloading `library` once it's saved.
+    case customFood(name: String, library: CustomFoodsViewModel)
+
     /// The stable identity of the sheet.
     var id: String {
         switch self {
@@ -19,6 +22,7 @@ enum TodaySheet: Identifiable {
         case .targets: "targets"
         case .account: "account"
         case .searchFilters: "searchFilters"
+        case .customFood: "customFood"
         }
     }
 }
