@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// The current version of a logged food.
+/// The current version of a logged food, unchanged since version 2.
 typealias FoodLogEntry = SchemaV2.FoodLogEntry
 
 extension SchemaV2 {

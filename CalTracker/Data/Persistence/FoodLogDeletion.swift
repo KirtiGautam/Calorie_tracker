@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// The current version of a deletion that still has to reach the server.
+/// The current version of a deletion that still has to reach the server, unchanged since version 2.
 typealias FoodLogDeletion = SchemaV2.FoodLogDeletion
 
 extension SchemaV2 {

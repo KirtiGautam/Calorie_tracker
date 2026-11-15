@@ -36,6 +36,36 @@ struct CalTrackerMigrationPlanTests {
         #expect(try container.mainContext.fetchCount(FetchDescriptor<FoodLogDeletion>()) == 0)
     }
 
+    @Test func version2StoreMigratesToVersion3() throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appending(path: "CalTracker.store")
+        let loggedAt = try Date("2026-11-10T12:00:00Z", strategy: .iso8601)
+        let syncID = UUID()
+
+        do {
+            let schema = Schema(versionedSchema: SchemaV2.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            container.mainContext.insert(SchemaV2.FoodLogEntry(
+                food: .fixture(), grams: 150, loggedAt: loggedAt, syncID: syncID, syncedDay: "2026-11-10"
+            ))
+            container.mainContext.insert(SchemaV2.FoodLogDeletion(syncID: UUID(), day: "2026-11-09"))
+            try container.mainContext.save()
+        }
+
+        let container = try openCurrentSchema(at: url)
+
+        let entry = try #require(try container.mainContext.fetch(FetchDescriptor<FoodLogEntry>()).first)
+        #expect(entry.syncID == syncID)
+        #expect(entry.syncedDay == "2026-11-10")
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<FoodLogDeletion>()) == 1)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<CustomFood>()) == 0)
+
+        // The new model works in the migrated store.
+        let store = CustomFoodStore(modelContext: container.mainContext)
+        try store.save(.fixture())
+        #expect(try store.foods(matching: "") == [.fixture()])
+    }
+
     /// Opens a store written by the version 1 app, so a change to a type the old schema stores can't go unnoticed.
     @Test func storeWrittenByVersion1MigratesToTheCurrentSchema() throws {
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -65,9 +95,8 @@ struct CalTrackerMigrationPlanTests {
         #expect(try container.mainContext.fetchCount(FetchDescriptor<FoodLogDeletion>()) == 0)
     }
 
-    /// Opens a store written by the current schema version. It fails when a stored type changes without a new
-    /// schema version, which would otherwise stop the app from opening existing stores.
-    @Test func storeWrittenByVersion2OpensWithTheCurrentSchema() throws {
+    /// Opens a store written by the version 2 app, so a change to a type version 2 stores can't go unnoticed.
+    @Test func storeWrittenByVersion2MigratesToTheCurrentSchema() throws {
         defer { try? FileManager.default.removeItem(at: directory) }
         let container = try openCurrentSchema(at: copyFixture(named: "caltracker_v2"))
 
@@ -82,6 +111,27 @@ struct CalTrackerMigrationPlanTests {
         let deletions = try container.mainContext.fetch(FetchDescriptor<FoodLogDeletion>())
         #expect(deletions.map(\.syncID) == [UUID(uuidString: "0A1B2C3D-4E5F-4061-8273-94A5B6C7D8E9")])
         #expect(deletions.map(\.day) == ["2026-10-27"])
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<CustomFood>()) == 0)
+    }
+
+    /// Opens a store written by the current schema version. It fails when a stored type changes without a new
+    /// schema version, which would otherwise stop the app from opening existing stores.
+    @Test func storeWrittenByVersion3OpensWithTheCurrentSchema() throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let container = try openCurrentSchema(at: copyFixture(named: "caltracker_v3"))
+
+        let entry = try #require(try container.mainContext.fetch(FetchDescriptor<FoodLogEntry>()).first)
+        #expect(entry.foodID == "cus-0f8fad5bd9cb469fa16570867728950e")
+        #expect(entry.source == .custom)
+        #expect(entry.syncedDay == "2026-11-14")
+        #expect(entry.per100g.iron == 2)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<FoodLogDeletion>()) == 1)
+
+        let food = try #require(try container.mainContext.fetch(FetchDescriptor<CustomFood>()).first)
+        #expect(food.record.food.name == "Grandma's dal")
+        #expect(food.record.servingGrams == 350)
+        #expect(food.record.food.per100g.energy == 120)
+        #expect(food.createdAt == (try Date("2026-11-14T12:55:00Z", strategy: .iso8601)))
     }
 
     /// Copies a bundled store into this test's directory, so opening it never touches the bundle.
@@ -93,7 +143,7 @@ struct CalTrackerMigrationPlanTests {
 
     /// Opens the store at `url` the way the app does, with the current schema and the migration plan.
     private func openCurrentSchema(at url: URL) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV2.self)
+        let schema = Schema(versionedSchema: SchemaV3.self)
         return try ModelContainer(
             for: schema,
             migrationPlan: CalTrackerMigrationPlan.self,
