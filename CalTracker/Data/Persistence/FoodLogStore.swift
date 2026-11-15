@@ -1,8 +1,8 @@
 import Foundation
 import SwiftData
 
-/// Writes food log entries to SwiftData, saving explicitly after every change.
-final class FoodLogStore: FoodLogging {
+/// Writes food log entries to SwiftData, saving explicitly after every change, and reads them back.
+final class FoodLogStore: FoodLogging, FoodHistory {
     /// Called after every successful change, so sync can push it.
     var onChange: () -> Void
 
@@ -14,16 +14,22 @@ final class FoodLogStore: FoodLogging {
         self.onChange = onChange
     }
 
-    func log(_ food: FoodItem, grams: Double) throws {
+    @discardableResult
+    func log(_ food: FoodItem, grams: Double) throws -> FoodLogEntry {
         try log(food, grams: grams, loggedAt: .now)
     }
 
     /// Logs `grams` of `food` at `loggedAt`.
-    func log(_ food: FoodItem, grams: Double, loggedAt: Date) throws {
+    ///
+    /// - Returns: The saved entry.
+    @discardableResult
+    func log(_ food: FoodItem, grams: Double, loggedAt: Date) throws -> FoodLogEntry {
         guard grams > 0, grams.isFinite else { throw LogFoodError.invalidAmount }
-        modelContext.insert(FoodLogEntry(food: food, grams: grams, loggedAt: loggedAt))
+        let entry = FoodLogEntry(food: food, grams: grams, loggedAt: loggedAt)
+        modelContext.insert(entry)
         try modelContext.save()
         onChange()
+        return entry
     }
 
     /// Removes `entry`. When it was already pushed, a tombstone is saved with it, so the next sync removes it from the server too.
@@ -34,5 +40,13 @@ final class FoodLogStore: FoodLogging {
         modelContext.delete(entry)
         try modelContext.save()
         onChange()
+    }
+
+    func records(loggedSince start: Date) throws -> [FoodLogRecord] {
+        let descriptor = FetchDescriptor(
+            predicate: FoodLogEntry.loggedSince(start),
+            sortBy: [SortDescriptor(\.loggedAt, order: .reverse)]
+        )
+        return try modelContext.fetch(descriptor).map(\.record)
     }
 }

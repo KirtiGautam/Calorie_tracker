@@ -33,6 +33,44 @@ struct FoodLogStoreTests {
         #expect(entry.nutrients.energy == 300)
     }
 
+    @Test func logReturnsTheSavedEntry() throws {
+        let noon = try Date("2026-10-23T12:00:00Z", strategy: .iso8601)
+
+        let entry = try store.log(food, grams: 150, loggedAt: noon)
+
+        let fetched = try #require(try fetchEntries(onSameDayAs: noon).first)
+        #expect(entry.persistentModelID == fetched.persistentModelID)
+    }
+
+    @Test func recordsSinceIncludeTheBoundaryAndSkipEarlierEntries() throws {
+        let start = try Date("2026-10-23T00:00:00Z", strategy: .iso8601)
+        let justBefore = try Date("2026-10-22T23:59:59Z", strategy: .iso8601)
+        let later = try Date("2026-10-24T09:00:00Z", strategy: .iso8601)
+        for date in [justBefore, start, later] {
+            try store.log(food, grams: 100, loggedAt: date)
+        }
+
+        let records = try store.records(loggedSince: start)
+
+        #expect(records.map(\.loggedAt) == [later, start])
+    }
+
+    @Test func recordRebuildsTheLoggedFood() throws {
+        let noon = try Date("2026-10-23T12:00:00Z", strategy: .iso8601)
+        let product = FoodItem.fixture(
+            id: "off-123",
+            name: "Granola",
+            brand: "Brand",
+            source: .openFoodFacts,
+            per100g: NutrientProfile(energy: 450, protein: 9, carbohydrates: 60, fat: 18)
+        )
+
+        try store.log(product, grams: 45, loggedAt: noon)
+
+        let record = try #require(try store.records(loggedSince: noon).first)
+        #expect(record == FoodLogRecord(food: product, grams: 45, loggedAt: noon))
+    }
+
     @Test func deletedEntryIsGone() throws {
         let noon = try Date("2026-10-23T12:00:00Z", strategy: .iso8601)
         try store.log(food, grams: 100, loggedAt: noon)

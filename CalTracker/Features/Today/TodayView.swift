@@ -8,16 +8,26 @@ struct TodayView: View {
     /// How long the log confirmation stays on screen.
     private static let confirmationDuration: Duration = .seconds(3)
 
+    /// How long a confirmation with Undo stays on screen, long enough to reach the button.
+    private static let undoableConfirmationDuration: Duration = .seconds(5)
+
+    /// How long a confirmation with Undo stays while VoiceOver runs, so there's time to find the button.
+    private static let undoableConfirmationVoiceOverDuration: Duration = .seconds(10)
+
     @Environment(\.calendar) private var calendar
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dependencies) private var dependencies
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
 
     @State private var path: [TodayDestination] = []
     @State private var sheet: TodaySheet?
 
     /// The food just logged, shown as a banner until it times out.
     @State private var confirmation: LoggedFood?
+
+    /// Why undoing a log failed, shown in an alert.
+    @State private var undoFailureMessage: LocalizedStringResource?
 
     /// The moment that defines "today".
     ///
@@ -66,22 +76,25 @@ struct TodayView: View {
                 case .search:
                     FoodSearchView(
                         viewModel: dependencies.makeSearchViewModel(),
+                        frequentFoods: dependencies.makeFrequentFoodsViewModel(),
                         onSelect: showLogFood,
+                        onSelectFrequent: showLogFrequentFood,
+                        onLogged: didLog,
                         onShowFilters: showSearchFilters
                     )
                 }
             }
             .safeAreaInset(edge: .bottom) {
                 if let confirmation {
-                    LogConfirmationBanner(loggedFood: confirmation)
+                    LogConfirmationBanner(loggedFood: confirmation, onUndo: undoConfirmedLog)
                         .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
                 }
             }
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {
-            case .logFood(let food):
-                LogFoodView(viewModel: dependencies.makeLogFoodViewModel(food: food), onLogged: didLog)
+            case .logFood(let food, let grams):
+                LogFoodView(viewModel: dependencies.makeLogFoodViewModel(food: food, grams: grams), onLogged: didLog)
             case .targets:
                 TargetsView(viewModel: dependencies.makeTargetsViewModel())
             case .account:
@@ -100,6 +113,7 @@ struct TodayView: View {
         .task(id: confirmation) {
             await hideConfirmationAfterDelay()
         }
+        .errorAlert(.deleteFailedTitle, message: $undoFailureMessage)
         // `initial: true` covers launch, so a separate launch sync would start a second pass.
         .onChange(of: scenePhase, initial: true) { _, newPhase in
             sceneDidChange(to: newPhase)
@@ -136,7 +150,12 @@ struct TodayView: View {
     }
 
     private func showLogFood(_ food: FoodItem) {
-        sheet = .logFood(food)
+        sheet = .logFood(food, grams: LogFoodViewModel.defaultGrams)
+    }
+
+    /// Opens the log sheet for a frequent food at the amount logged last time.
+    private func showLogFrequentFood(_ frequentFood: FrequentFood) {
+        sheet = .logFood(frequentFood.food, grams: frequentFood.grams)
     }
 
     private func showSearchFilters(for viewModel: FoodSearchViewModel) {
@@ -153,16 +172,41 @@ struct TodayView: View {
         AccessibilityNotification.Announcement(String(localized: loggedFood.message)).post()
     }
 
+    /// Removes the entry the confirmation offers to undo, then hides the confirmation.
+    private func undoConfirmedLog() {
+        guard let confirmation, let entry = confirmation.undoableEntry else { return }
+        // The person may have swiped the entry away already, and deleting it twice would leave a second tombstone.
+        if entry.isDeleted == false, entry.modelContext != nil {
+            do {
+                try dependencies.foodLog.delete(entry)
+            } catch {
+                undoFailureMessage = userMessage(for: error)
+                return
+            }
+        }
+        withAnimation {
+            self.confirmation = nil
+        }
+        AccessibilityNotification.Announcement(String(localized: .logUndoneAnnouncement(confirmation.name))).post()
+    }
+
     private func hideConfirmationAfterDelay() async {
-        guard confirmation != nil else { return }
+        guard let confirmation else { return }
+        let duration = if confirmation.undoableEntry == nil {
+            Self.confirmationDuration
+        } else if voiceOverEnabled {
+            Self.undoableConfirmationVoiceOverDuration
+        } else {
+            Self.undoableConfirmationDuration
+        }
         do {
-            try await Task.sleep(for: Self.confirmationDuration)
+            try await Task.sleep(for: duration)
         } catch {
             // A newer confirmation replaced this one, or the view went away.
             return
         }
         withAnimation {
-            confirmation = nil
+            self.confirmation = nil
         }
     }
 
@@ -201,7 +245,7 @@ struct TodayView: View {
     ]
     for (daysAgo, food, grams) in seeds {
         let date = calendar.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now
-        try? store.log(food, grams: grams, loggedAt: date)
+        _ = try? store.log(food, grams: grams, loggedAt: date)
     }
     return TodayView()
         .modelContainer(container)

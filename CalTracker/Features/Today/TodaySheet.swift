@@ -1,7 +1,7 @@
 /// The sheets the Today screen can present, one at a time.
 enum TodaySheet: Identifiable {
-    /// Choose how much of a food to log.
-    case logFood(FoodItem)
+    /// Choose how much of a food to log, starting at `grams`.
+    case logFood(FoodItem, grams: Double)
 
     /// Edit the goal and daily targets.
     case targets
@@ -15,7 +15,7 @@ enum TodaySheet: Identifiable {
     /// The stable identity of the sheet.
     var id: String {
         switch self {
-        case .logFood(let food): "logFood-\(food.id)"
+        case .logFood(let food, _): "logFood-\(food.id)"
         case .targets: "targets"
         case .account: "account"
         case .searchFilters: "searchFilters"

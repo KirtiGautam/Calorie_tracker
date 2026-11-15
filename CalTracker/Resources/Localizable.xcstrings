@@ -661,6 +661,18 @@
         }
       }
     },
+    "frequentSection" : {
+      "comment" : "Section header on the Add Food screen, before a search, above the foods the person logs most often.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frequently Logged"
+          }
+        }
+      }
+    },
     "goalBadgeAccessibilityLabel" : {
       "comment" : "Spoken label for the goal badge on Today. %1$@ is the one-word goal, such as “Cut”.",
       "extractionState" : "manual",
@@ -849,6 +861,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logged Today"
+          }
+        }
+      }
+    },
+    "logUndoneAnnouncement" : {
+      "comment" : "VoiceOver announcement after the person taps Undo on the log confirmation. %1$@ is the food's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removed %1$@"
           }
         }
       }
@@ -1281,6 +1305,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Previous Day"
+          }
+        }
+      }
+    },
+    "quickLogAction" : {
+      "comment" : "Accessibility label of the + button on a frequent food, which logs it again right away. %1$@ is the amount with its unit, such as “120 g”. %2$@ is the food's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log %1$@ of %2$@"
           }
         }
       }
@@ -1737,6 +1773,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Try Again"
+          }
+        }
+      }
+    },
+    "undoAction" : {
+      "comment" : "Button on the confirmation banner on Today that removes the food just logged.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
           }
         }
       }

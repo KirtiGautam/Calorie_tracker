@@ -7,18 +7,22 @@ final class LogFoodViewModel {
     /// The quick-pick amounts, in grams.
     static let gramPresets: [Double] = [50, 100, 150, 200]
 
+    /// The amount the sheet starts at when there's no better guess, in grams.
+    static let defaultGrams = 100.0
+
     /// The food being logged.
     let food: FoodItem
 
     /// The amount to log, in grams.
-    var grams = 100.0
+    var grams: Double
 
     @ObservationIgnored private let foodLog: any FoodLogging
 
-    /// Creates a view model that logs `food` through `foodLog`.
-    init(food: FoodItem, foodLog: any FoodLogging) {
+    /// Creates a view model that logs `food` through `foodLog`, starting at `grams`.
+    init(food: FoodItem, foodLog: any FoodLogging, grams: Double = defaultGrams) {
         self.food = food
         self.foodLog = foodLog
+        self.grams = grams
     }
 
     /// Whether `grams` is a positive, finite amount that can be logged.

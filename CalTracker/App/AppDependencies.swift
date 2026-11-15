@@ -9,6 +9,9 @@ struct AppDependencies {
     /// Where logged foods are written.
     let foodLog: any FoodLogging
 
+    /// Where logged foods are read back, for quick add.
+    let foodHistory: any FoodHistory
+
     /// The person's daily targets and goal.
     let targets: TargetsStore
 
@@ -26,9 +29,14 @@ struct AppDependencies {
         FoodSearchViewModel(foodSearch: foodSearch, preferences: searchPreferences)
     }
 
-    /// Creates a view model for logging `food`.
-    func makeLogFoodViewModel(food: FoodItem) -> LogFoodViewModel {
-        LogFoodViewModel(food: food, foodLog: foodLog)
+    /// Creates a view model for the foods the person logs most often, shown on the search screen.
+    func makeFrequentFoodsViewModel() -> FrequentFoodsViewModel {
+        FrequentFoodsViewModel(history: foodHistory, foodLog: foodLog)
+    }
+
+    /// Creates a view model for logging `food`, starting at `grams`.
+    func makeLogFoodViewModel(food: FoodItem, grams: Double = LogFoodViewModel.defaultGrams) -> LogFoodViewModel {
+        LogFoodViewModel(food: food, foodLog: foodLog, grams: grams)
     }
 
     /// Creates a view model for editing the daily targets.
@@ -72,6 +80,7 @@ struct AppDependencies {
         return AppDependencies(
             foodSearch: CombinedFoodSearch(usda: usda, openFoodFacts: openFoodFacts),
             foodLog: foodLog,
+            foodHistory: foodLog,
             targets: targets,
             searchPreferences: SearchPreferencesStore(defaults: defaults),
             account: account,

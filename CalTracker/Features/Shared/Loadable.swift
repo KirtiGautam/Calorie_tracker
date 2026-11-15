@@ -14,3 +14,10 @@ enum Loadable<Value> {
     /// The request failed with a message ready to show the person.
     case failed(LocalizedStringResource)
 }
+
+extension Loadable {
+    /// Whether nothing has been requested yet.
+    var isIdle: Bool {
+        if case .idle = self { true } else { false }
+    }
+}

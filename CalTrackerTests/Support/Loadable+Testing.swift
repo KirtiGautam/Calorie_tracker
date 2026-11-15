@@ -2,11 +2,6 @@ import Foundation
 @testable import CalTracker
 
 extension Loadable {
-    /// Whether the state is `.idle`.
-    var isIdle: Bool {
-        if case .idle = self { true } else { false }
-    }
-
     /// Whether the state is `.loading`.
     var isLoading: Bool {
         if case .loading = self { true } else { false }
