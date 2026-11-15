@@ -43,6 +43,16 @@ func userMessage(for error: any Error) -> LocalizedStringResource {
         }
     }
 
+    if let customFoodError = error as? CustomFoodError {
+        return switch customFoodError {
+        case .missingName: .errorCustomFoodMissingName
+        case .invalidReferenceAmount: .errorCustomFoodInvalidWeight
+        case .implausibleAmount(let nutrient): .errorCustomFoodImplausible(String(localized: nutrient.title))
+        case .macrosExceedWeight: .errorCustomFoodMacrosExceedWeight
+        case .missingEnergy: .errorCustomFoodMissingEnergy
+        }
+    }
+
     if let targetsError = error as? TargetsError {
         return switch targetsError {
         case .invalidTarget: .errorInvalidTarget

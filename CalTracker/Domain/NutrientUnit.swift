@@ -56,7 +56,7 @@ nonisolated enum NutrientUnit: String, Codable, Sendable {
     }
 
     /// Formats a sample measurement and keeps only the unit part, since `Dimension.symbol` isn't localized ("kCal").
-    private static func abbreviation<UnitType: Dimension>(of unit: UnitType) -> String {
+    static func abbreviation<UnitType: Dimension>(of unit: UnitType) -> String {
         let formatted = Measurement(value: 1, unit: unit)
             .formatted(.measurement(width: .abbreviated, usage: .asProvided).attributed)
         return formatted.runs[\.measurement]

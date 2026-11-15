@@ -1,11 +1,17 @@
 import Foundation
 
-/// The database a food came from.
+/// Where a food came from: a database, or the person who entered it.
 ///
 /// The cases are in the order results and failures are listed.
 nonisolated enum FoodSource: String, CaseIterable, Codable, Hashable, Sendable {
     case usda
     case openFoodFacts
+
+    /// A food the person entered themselves, from a label or a recipe.
+    case custom
+
+    /// The databases a search queries, in the order their results and failures are listed.
+    static let databases: [FoodSource] = [.usda, .openFoodFacts]
 
     /// Returns the source of the food with the source-prefixed `foodID`, or `nil` when no source uses its prefix.
     init?(foodID: String) {
@@ -18,6 +24,7 @@ nonisolated enum FoodSource: String, CaseIterable, Codable, Hashable, Sendable {
         switch self {
         case .usda: .sourceUSDA
         case .openFoodFacts: .sourceOpenFoodFacts
+        case .custom: .sourceCustom
         }
     }
 
@@ -26,6 +33,7 @@ nonisolated enum FoodSource: String, CaseIterable, Codable, Hashable, Sendable {
         switch self {
         case .usda: "usda-"
         case .openFoodFacts: "off-"
+        case .custom: "cus-"
         }
     }
 

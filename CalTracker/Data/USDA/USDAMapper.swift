@@ -3,7 +3,7 @@ import Foundation
 /// Converts USDA FoodData Central DTOs into `FoodItem`s.
 nonisolated enum USDAMapper {
     /// Micrograms of vitamin D (cholecalciferol) per International Unit.
-    static let vitaminDMicrogramsPerIU = 0.025
+    static let vitaminDMicrogramsPerIU = NutrientEntryUnit.vitaminDMicrogramsPerIU
 
     /// Returns the foods in `response`, dropping any without a name.
     static func foodItems(from response: USDASearchResponse) -> [FoodItem] {
@@ -83,26 +83,15 @@ nonisolated enum USDAMapper {
             return nil
         }
 
-        if nutrient.unit == .kilocalories {
-            return switch unitName {
-            case "KCAL": value
-            case "KJ": value / NutrientUnit.kilojoulesPerKilocalorie
-            default: nil
-            }
-        }
-
-        if unitName == "IU" {
-            // Only vitamin D has a fixed IU conversion. Vitamin A IU depends on the source compound.
-            return nutrient == .vitaminD ? value * vitaminDMicrogramsPerIU : nil
-        }
-
-        let sourceUnitsPerGram: Double? = switch unitName {
-        case "G": NutrientUnit.grams.perGram
-        case "MG": NutrientUnit.milligrams.perGram
-        case "UG", "MCG": NutrientUnit.micrograms.perGram
+        let unit: NutrientEntryUnit? = switch unitName {
+        case "KCAL": .kilocalories
+        case "KJ": .kilojoules
+        case "G": .grams
+        case "MG": .milligrams
+        case "UG", "MCG": .micrograms
+        case "IU": .internationalUnits
         default: nil
         }
-        // One combined factor keeps same-unit values exact (12.5 µg stays 12.5, not 12.499999999999998).
-        return sourceUnitsPerGram.map { value * (nutrient.unit.perGram / $0) }
+        return unit?.amount(value, of: nutrient)
     }
 }

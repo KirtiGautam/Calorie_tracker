@@ -469,6 +469,66 @@
         }
       }
     },
+    "errorCustomFoodImplausible" : {
+      "comment" : "Error when a custom food's nutrient amount is negative or more than its weight could hold. %1$@ is the nutrient's name, such as “Protein”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ is too high for the weight the values are for."
+          }
+        }
+      }
+    },
+    "errorCustomFoodInvalidWeight" : {
+      "comment" : "Error when the weight a custom food's values are for is blank, zero or negative.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the weight the values are for, greater than 0 g."
+          }
+        }
+      }
+    },
+    "errorCustomFoodMacrosExceedWeight" : {
+      "comment" : "Error when a custom food's protein, carbs and fat weigh more than the weight its values are for.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protein, carbs and fat add up to more than the weight the values are for."
+          }
+        }
+      }
+    },
+    "errorCustomFoodMissingEnergy" : {
+      "comment" : "Error when a custom food has no energy and not all of protein, carbs and fat to calculate it from.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the energy, or protein, carbs and fat to calculate it."
+          }
+        }
+      }
+    },
+    "errorCustomFoodMissingName" : {
+      "comment" : "Error when the person tries to save a custom food without a name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a name for the food."
+          }
+        }
+      }
+    },
     "errorEmailTaken" : {
       "comment" : "Error when creating an account with an email that's already registered.",
       "extractionState" : "manual",
@@ -1561,6 +1621,18 @@
         }
       }
     },
+    "sourceCustom" : {
+      "comment" : "Badge on a food the person entered themselves rather than one from a database.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Food"
+          }
+        }
+      }
+    },
     "sourceOpenFoodFacts" : {
       "comment" : "Badge naming the Open Food Facts database. Proper name.",
       "extractionState" : "manual",
@@ -1785,6 +1857,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Undo"
+          }
+        }
+      }
+    },
+    "unitInternationalUnits" : {
+      "comment" : "Abbreviation for International Units, a unit vitamin D amounts can be entered in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IU"
           }
         }
       }

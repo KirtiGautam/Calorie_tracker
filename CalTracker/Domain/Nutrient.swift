@@ -66,6 +66,19 @@ nonisolated enum Nutrient: String, CaseIterable, Identifiable, Codable, Sendable
         }
     }
 
+    /// The units the person can type an amount of this nutrient in, starting with `unit`.
+    ///
+    /// Energy can be typed in kcal or kJ, and the mass nutrients measured in mg or µg in any mass unit. Vitamin D can
+    /// also be typed in IU, which has a fixed conversion for it. Nutrients measured in grams only take grams.
+    var entryUnits: [NutrientEntryUnit] {
+        switch unit {
+        case .kilocalories: [.kilocalories, .kilojoules]
+        case .grams: [.grams]
+        case .milligrams: [.milligrams, .micrograms, .grams]
+        case .micrograms: self == .vitaminD ? [.micrograms, .milligrams, .internationalUnits] : [.micrograms, .milligrams]
+        }
+    }
+
     /// The per-100 g amounts that can be real, in `unit`.
     ///
     /// No food has more than 100 g of one nutrient per 100 g, and pure fat is about 900 kcal per 100 g.

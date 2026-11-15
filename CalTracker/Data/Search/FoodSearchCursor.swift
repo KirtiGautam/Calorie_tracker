@@ -14,18 +14,20 @@ nonisolated struct FoodSearchCursor: Hashable, Sendable {
         usda != nil || openFoodFacts != nil
     }
 
-    /// The next page for `source`.
+    /// The next page for `source`. Custom foods aren't searched remotely, so `.custom` is always `nil`.
     subscript(source: FoodSource) -> Int? {
         get {
             switch source {
             case .usda: usda
             case .openFoodFacts: openFoodFacts
+            case .custom: nil
             }
         }
         set {
             switch source {
             case .usda: usda = newValue
             case .openFoodFacts: openFoodFacts = newValue
+            case .custom: break
             }
         }
     }
